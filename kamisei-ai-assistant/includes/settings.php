@@ -16,10 +16,10 @@ function kaia_defaults() {
 		'phone'           => '',
 		'reservation_url' => '',
 		'privacy_url'     => '',
-		'greeting'        => 'こんにちは!リフォームのご相談をお手伝いします。どちらを直したいですか?',
+		'greeting'        => 'こんにちは!屋根・雨漏り・外壁などのお困りごとをお聞かせください。',
 		'extra_prompt'    => '',
 		'rate_limit'      => 20,
-		'quick_keywords'  => "浴室\nキッチン\nトイレ\n洗面\n屋根\n外壁\n床\n階段",
+		'quick_keywords'  => "雨漏り\n屋根修理\n屋根工事\n瓦屋根\nスレート屋根\nスカイライトチューブ\n外壁工事\n防水工事\n台風",
 	);
 }
 

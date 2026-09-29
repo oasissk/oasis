@@ -25,7 +25,7 @@
 
   root.querySelector('.kaia-fab').textContent = AI ? '💬 リフォームのご相談' : '🔍 事例を探す';
   root.querySelector('.kaia-head span').textContent = KAIA.company + (AI ? ' 相談アシスタント' : ' 事例検索');
-  input.placeholder = AI ? 'ご要望をお書きください' : 'キーワード(例: 浴室 寒い)';
+  input.placeholder = AI ? 'ご要望をお書きください' : 'キーワード(例: 雨漏り 瓦)';
   send.textContent = AI ? '送信' : '検索';
 
   var note = root.querySelector('.kaia-note');
