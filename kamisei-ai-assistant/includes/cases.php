@@ -7,9 +7,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * 施工事例をキーワード検索し、AIとカード表示の両方で使う形式で返す。
  * タイトル・本文に加え、カテゴリー名・タグ名にもヒットさせる。
  */
-function kaia_search_cases( $keywords, $limit = 3 ) {
+function kaia_search_posts( $keywords, array $cat_ids, $kind, $limit = 3 ) {
 	$post_type = kaia_get( 'post_type' );
-	$category  = (int) kaia_get( 'category' );
 	$terms     = preg_split( '/[\s、,,・]+/u', trim( (string) $keywords ), -1, PREG_SPLIT_NO_EMPTY );
 	$terms     = array_slice( $terms, 0, 5 );
 	$scores    = array();
@@ -21,9 +20,10 @@ function kaia_search_cases( $keywords, $limit = 3 ) {
 		'fields'         => 'ids',
 		'no_found_rows'  => true,
 	);
-	if ( $category && 'post' === $post_type ) {
-		$base['cat'] = $category; // 子カテゴリーも含む
+	if ( ! $cat_ids ) {
+		return array(); // カテゴリー未設定なら何も紹介しない(ブログ等の混入防止)
 	}
+	$base['cat'] = implode( ',', array_map( 'absint', $cat_ids ) ); // 子カテゴリーも含む
 
 	foreach ( $terms as $term ) {
 		// 1) タイトル・本文
@@ -57,6 +57,7 @@ function kaia_search_cases( $keywords, $limit = 3 ) {
 	foreach ( array_slice( array_keys( $scores ), 0, $limit ) as $id ) {
 		$out[] = array(
 			'id'      => $id,
+			'kind'    => $kind,
 			'title'   => get_the_title( $id ),
 			'url'     => get_permalink( $id ),
 			'summary' => wp_trim_words( wp_strip_all_tags( get_post_field( 'post_content', $id ) ), 60, '…' ),
@@ -64,4 +65,13 @@ function kaia_search_cases( $keywords, $limit = 3 ) {
 		);
 	}
 	return $out;
+}
+
+function kaia_search_cases( $keywords ) {
+	$cat = (int) kaia_get( 'category' );
+	return kaia_search_posts( $keywords, $cat ? array( $cat ) : array(), 'case', 3 );
+}
+
+function kaia_search_articles( $keywords ) {
+	return kaia_search_posts( $keywords, (array) kaia_get( 'article_cats' ), 'article', 2 );
 }

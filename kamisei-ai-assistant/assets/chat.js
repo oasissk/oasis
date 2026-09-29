@@ -48,7 +48,7 @@
       a.className = 'kaia-card'; a.href = c.url; a.target = '_blank'; a.rel = 'noopener';
       if (c.image) { var im = document.createElement('img'); im.src = c.image; im.alt = ''; a.appendChild(im); }
       var s = document.createElement('span');
-      var b = document.createElement('b'); b.textContent = c.title;
+      var b = document.createElement('b'); b.textContent = (c.kind === 'article' ? '【参考記事】' : '【施工事例】') + c.title;
       s.appendChild(b); s.appendChild(document.createTextNode(c.summary || ''));
       a.appendChild(s); wrap.appendChild(a);
     });

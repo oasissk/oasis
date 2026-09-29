@@ -14,6 +14,7 @@ function kaia_system_prompt() {
 		. "進め方:\n"
 		. "1. 直したい場所、築年数、困りごと、ご予算の目安を、一度に1〜2問ずつ聞く。\n"
 		. "2. ある程度分かったら search_cases ツールで近い施工事例を探し、紹介する。事例は画面にカード表示されるので、本文でURLを繰り返さなくてよい。\n"
+		. "   補足として、お悩みに関する解説記事があれば search_articles ツールで探し、「こちらの記事も参考になります」と1〜2件添える(事例の代わりにはしない)。\n"
 		. "3. お客様が相談・現地調査を希望したら、お名前と連絡先(電話かメール)を尋ね、個人情報の取り扱いに同意を得たうえで request_handoff ツールを呼ぶ。\n\n"
 		. "守ること:\n"
 		. "- 返答は短く、やさしい日本語で。\n"
@@ -37,6 +38,15 @@ function kaia_tools() {
 		array(
 			'name'         => 'search_cases',
 			'description'  => '施工事例をキーワードで検索する。場所や工事内容(例: 浴室 リフォーム 名古屋)を渡す。',
+			'input_schema' => array(
+				'type'       => 'object',
+				'properties' => array( 'keywords' => array( 'type' => 'string', 'description' => '空白区切りのキーワード' ) ),
+				'required'   => array( 'keywords' ),
+			),
+		),
+		array(
+			'name'         => 'search_articles',
+			'description'  => 'お悩みや工事に関する解説記事(お客様の声、リフォーム解説など)をキーワードで検索する。施工事例ではない。',
 			'input_schema' => array(
 				'type'       => 'object',
 				'properties' => array( 'keywords' => array( 'type' => 'string', 'description' => '空白区切りのキーワード' ) ),
@@ -116,8 +126,8 @@ function kaia_chat( array $messages ) {
 		$results    = array();
 		foreach ( $uses as $use ) {
 			$in = $use['input'] ?? array();
-			if ( 'search_cases' === $use['name'] ) {
-				$found = kaia_search_cases( $in['keywords'] ?? '' );
+			if ( in_array( $use['name'], array( 'search_cases', 'search_articles' ), true ) ) {
+				$found = 'search_cases' === $use['name'] ? kaia_search_cases( $in['keywords'] ?? '' ) : kaia_search_articles( $in['keywords'] ?? '' );
 				foreach ( $found as $c ) {
 					$cases[ $c['id'] ] = $c;
 				}

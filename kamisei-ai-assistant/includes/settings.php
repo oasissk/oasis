@@ -11,6 +11,7 @@ function kaia_defaults() {
 		'company_name'    => '神清',
 		'post_type'       => 'post',
 		'category'        => 0,
+		'article_cats'    => array(),
 		'notify_email'    => get_option( 'admin_email' ),
 		'phone'           => '',
 		'reservation_url' => '',
@@ -43,6 +44,7 @@ function kaia_sanitize( $in ) {
 		'company_name'    => sanitize_text_field( $in['company_name'] ?? '' ),
 		'post_type'       => sanitize_key( $in['post_type'] ?? 'post' ),
 		'category'        => absint( $in['category'] ?? 0 ),
+		'article_cats'    => array_values( array_filter( array_map( 'absint', (array) ( $in['article_cats'] ?? array() ) ) ) ),
 		'notify_email'    => sanitize_email( $in['notify_email'] ?? '' ),
 		'phone'           => sanitize_text_field( $in['phone'] ?? '' ),
 		'reservation_url' => esc_url_raw( $in['reservation_url'] ?? '' ),
@@ -93,6 +95,11 @@ function kaia_render_settings() {
 					) );
 					?>
 					<p class="description">施工事例が「投稿」の中にある場合、事例のカテゴリーを選びます。ブログやお知らせが事例として紹介されなくなります。</p></td></tr>
+				<tr><th>参考記事のカテゴリー</th><td>
+					<?php foreach ( get_categories( array( 'hide_empty' => false ) ) as $c ) : ?>
+						<label style="display:inline-block;margin:0 16px 4px 0"><input type="checkbox" name="<?php echo esc_attr( $f( 'article_cats' ) ); ?>[]" value="<?php echo esc_attr( $c->term_id ); ?>" <?php checked( in_array( $c->term_id, (array) $o['article_cats'], true ) ); ?>> <?php echo esc_html( $c->name ); ?> (<?php echo (int) $c->count; ?>)</label>
+					<?php endforeach; ?>
+					<p class="description">お悩みに関係する解説記事(リフォーム解説、お客様の声など)のカテゴリー。事例の補足として紹介されます。ブログやお知らせは選ばないでください。</p></td></tr>
 				<tr><th>通知先メール</th><td><input type="email" class="regular-text" name="<?php echo esc_attr( $f( 'notify_email' ) ); ?>" value="<?php echo esc_attr( $o['notify_email'] ); ?>"></td></tr>
 				<tr><th>電話番号</th><td><input type="text" class="regular-text" name="<?php echo esc_attr( $f( 'phone' ) ); ?>" value="<?php echo esc_attr( $o['phone'] ); ?>"></td></tr>
 				<tr><th>現地調査の予約ページURL</th><td><input type="url" class="regular-text" name="<?php echo esc_attr( $f( 'reservation_url' ) ); ?>" value="<?php echo esc_attr( $o['reservation_url'] ); ?>"></td></tr>
