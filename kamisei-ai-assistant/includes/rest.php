@@ -16,14 +16,14 @@ add_action( 'rest_api_init', function () {
 /**
  * 簡易レート制限(IPごと・1時間)。超過時は WP_Error。
  */
-function kaia_rate_check() {
+function kaia_rate_check( $bucket = 'main', $mult = 1 ) {
 	if ( ! kaia_get( 'enabled' ) ) {
 		return new WP_Error( 'kaia_off', '現在ご利用いただけません。', array( 'status' => 503 ) );
 	}
 	$ip    = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-	$tkey  = 'kaia_rl_' . md5( $ip );
+	$tkey  = 'kaia_rl_' . $bucket . '_' . md5( $ip );
 	$count = (int) get_transient( $tkey );
-	if ( $count >= (int) kaia_get( 'rate_limit' ) ) {
+	if ( $count >= (int) kaia_get( 'rate_limit' ) * $mult ) {
 		return new WP_Error( 'kaia_rate', '短時間にご利用が集中しています。お電話でもご相談いただけます。', array( 'status' => 429 ) );
 	}
 	set_transient( $tkey, $count + 1, HOUR_IN_SECONDS );
@@ -66,7 +66,7 @@ function kaia_rest_chat( WP_REST_Request $req ) {
 
 /** 検索のみモード: AIを使わずキーワードで事例・記事を返す。 */
 function kaia_rest_search( WP_REST_Request $req ) {
-	$ok = kaia_rate_check();
+	$ok = kaia_rate_check( 'search', 5 ); // 検索は無料なので上限を緩く(共有IPのお客様への配慮)
 	if ( is_wp_error( $ok ) ) {
 		return $ok;
 	}

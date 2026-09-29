@@ -83,6 +83,7 @@ function kaia_chat( array $messages ) {
 
 	$cases   = array();
 	$handoff = false;
+	$said    = array();
 
 	for ( $i = 0; $i < 4; $i++ ) {
 		$res = wp_remote_post( 'https://api.anthropic.com/v1/messages', array(
@@ -118,8 +119,11 @@ function kaia_chat( array $messages ) {
 			}
 		}
 
+		if ( '' !== trim( $text ) ) {
+			$said[] = trim( $text );
+		}
 		if ( 'tool_use' !== ( $data['stop_reason'] ?? '' ) || ! $uses ) {
-			return array( 'reply' => trim( $text ), 'cases' => array_values( $cases ), 'handoff' => $handoff );
+			return array( 'reply' => implode( "\n", $said ), 'cases' => array_values( $cases ), 'handoff' => $handoff );
 		}
 
 		$messages[] = array( 'role' => 'assistant', 'content' => $data['content'] );

@@ -123,7 +123,7 @@ function kaia_search_posts( $input, array $cat_ids, $kind, $limit = 3, $unrestri
 	if ( ! $unrestricted ) {
 		$base['cat'] = implode( ',', array_map( 'absint', $cat_ids ) ); // 子カテゴリーも含む
 	}
-	$taxes  = array_intersect( array( 'category', 'post_tag' ), get_object_taxonomies( $post_type ) );
+	$taxes  = array_values( array_intersect( array( 'category', 'post_tag' ), get_object_taxonomies( $post_type ) ) );
 	$scores = array();
 
 	foreach ( $terms as $term => $w ) {
@@ -131,25 +131,35 @@ function kaia_search_posts( $input, array $cat_ids, $kind, $limit = 3, $unrestri
 		foreach ( $q->posts as $id ) {
 			$scores[ $id ] = ( $scores[ $id ] ?? 0 ) + $w;
 		}
-		if ( $w >= 2 ) {                                      // 入力した言葉がタイトルにある記事は最優先
-			$q = new WP_Query( $base + array( 's' => $term, 'search_columns' => array( 'post_title' ) ) );
-			foreach ( $q->posts as $id ) {
-				$scores[ $id ] = ( $scores[ $id ] ?? 0 ) + 10;
-			}
-		}
-		foreach ( $taxes as $tax ) {                          // タグ名・カテゴリー名
-			$ids = get_terms( array( 'taxonomy' => $tax, 'name__like' => $term, 'fields' => 'ids', 'hide_empty' => true ) );
-			if ( is_wp_error( $ids ) || ! $ids ) {
-				continue;
-			}
-			$q = new WP_Query( $base + array(
-				'tax_query' => array( array( 'taxonomy' => $tax, 'field' => 'term_id', 'terms' => $ids ) ),
-			) );
-			foreach ( $q->posts as $id ) {
-				$scores[ $id ] = ( $scores[ $id ] ?? 0 ) + $w;
+		if ( $taxes ) {                                       // タグ名・カテゴリー名
+			$ids = get_terms( array( 'taxonomy' => $taxes, 'name__like' => $term, 'fields' => 'ids', 'hide_empty' => true ) );
+			if ( ! is_wp_error( $ids ) && $ids ) {
+				// タグ/カテゴリーのOR条件は入れ子にする(外側はANDのまま、'cat' の絞り込みを保つ)
+				$or = array( 'relation' => 'OR' );
+				foreach ( $taxes as $tax ) {
+					$or[] = array( 'taxonomy' => $tax, 'field' => 'term_id', 'terms' => $ids );
+				}
+				$q = new WP_Query( $base + array( 'tax_query' => array( $or ) ) );
+				foreach ( $q->posts as $id ) {
+					$scores[ $id ] = ( $scores[ $id ] ?? 0 ) + $w;
+				}
 			}
 		}
 	}
+
+	// 入力した言葉がタイトルに入っている記事は最優先
+	$primary = array_keys( array_filter( $terms, function ( $w ) {
+		return $w >= 2;
+	} ) );
+	foreach ( array_keys( $scores ) as $id ) {
+		$title = get_the_title( $id );
+		foreach ( $primary as $p ) {
+			if ( false !== mb_stripos( $title, $p ) ) {
+				$scores[ $id ] += 10;
+			}
+		}
+	}
+
 	if ( ! $scores ) {
 		return array();
 	}

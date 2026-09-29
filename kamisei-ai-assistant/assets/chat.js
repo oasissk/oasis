@@ -25,7 +25,7 @@
   root.id = 'kaia-root';
   root.innerHTML =
     '<button class="kaia-fab" type="button"><span class="kaia-ava">' + AVATAR + '</span><span><b></b><small>無料・1分・選ぶだけ</small></span></button>' +
-    '<div class="kaia-panel" role="dialog" aria-label="' + TITLE + '">' +
+    '<div class="kaia-panel" role="dialog">' +
     '<div class="kaia-head"><span class="kaia-ava">' + AVATAR + '</span><span class="kaia-title"><b></b><small></small></span><button class="kaia-close" type="button" aria-label="閉じる">×</button></div>' +
     '<div class="kaia-log" aria-live="polite"></div>' +
     '<div class="kaia-note"></div>' +
@@ -38,6 +38,7 @@
   var input = form.querySelector('textarea');
   var send = form.querySelector('button');
 
+  root.querySelector('.kaia-panel').setAttribute('aria-label', TITLE);
   root.querySelector('.kaia-fab b').textContent = TITLE;
   root.querySelector('.kaia-head b').textContent = TITLE;
   root.querySelector('.kaia-head small').textContent = KAIA.company + 'が屋根・雨漏りのお悩みを一緒に整理します';
@@ -107,13 +108,19 @@
     var f = el('form', 'kaia-inq');
     f.innerHTML =
       '<h4>担当者に相談する</h4>' +
-      '<p class="kaia-sub">' + KAIA.company + 'の担当者が、内容を確認してご連絡します。</p>' +
+      '<p class="kaia-sub"></p>' +
       '<label><span>お名前<em class="kaia-req">必須</em></span><input name="name" required maxlength="100" autocomplete="name"></label>' +
       '<label><span>電話番号またはメール<em class="kaia-req">必須</em></span><input name="contact" required maxlength="200" autocomplete="tel"></label>' +
       '<label><span>ご相談内容</span><textarea name="message" maxlength="1000"></textarea></label>' +
       '<input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">' +
-      '<label class="kaia-consent"><input type="checkbox" name="consent"><span>個人情報の取り扱いに同意します' + (KAIA.privacy ? '(<a href="' + KAIA.privacy + '" target="_blank" rel="noopener">詳細</a>)' : '') + '</span></label>' +
+      '<label class="kaia-consent"><input type="checkbox" name="consent"><span>個人情報の取り扱いに同意します</span></label>' +
       '<button type="submit">この内容で送信する</button>';
+    f.querySelector('.kaia-sub').textContent = KAIA.company + 'の担当者が、内容を確認してご連絡します。';
+    if (KAIA.privacy) {
+      var pl = el('a', '', '詳細'); pl.href = KAIA.privacy; pl.target = '_blank'; pl.rel = 'noopener';
+      var cs = f.querySelector('.kaia-consent span');
+      cs.appendChild(document.createTextNode('(')); cs.appendChild(pl); cs.appendChild(document.createTextNode(')'));
+    }
     if (prefill) f.querySelector('textarea').value = prefill;
     f.addEventListener('submit', function (e) {
       e.preventDefault();

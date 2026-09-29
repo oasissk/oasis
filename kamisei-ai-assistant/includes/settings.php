@@ -42,7 +42,7 @@ function kaia_sanitize( $in ) {
 	$out = array(
 		'enabled'         => empty( $in['enabled'] ) ? 0 : 1,
 		'api_key'         => empty( $in['api_key'] ) ? $old['api_key'] : sanitize_text_field( $in['api_key'] ),
-		'model'           => sanitize_text_field( $in['model'] ?? '' ),
+		'model'           => sanitize_text_field( $in['model'] ?? '' ) ?: kaia_defaults()['model'],
 		'company_name'    => sanitize_text_field( $in['company_name'] ?? '' ),
 		'widget_title'    => sanitize_text_field( $in['widget_title'] ?? '' ) ?: '簡単お困りごと診断',
 		'post_type'       => sanitize_key( $in['post_type'] ?? 'post' ),
@@ -72,6 +72,9 @@ function kaia_render_settings() {
 	?>
 	<div class="wrap">
 		<h1>AIアシスタント設定</h1>
+		<?php if ( ! $o['category'] ) : ?>
+			<div class="notice notice-warning"><p>「施工事例のカテゴリー」が未設定です。このままでは施工事例が紹介されません。</p></div>
+		<?php endif; ?>
 		<form method="post" action="options.php">
 			<?php settings_fields( 'kaia' ); ?>
 			<table class="form-table" role="presentation">
