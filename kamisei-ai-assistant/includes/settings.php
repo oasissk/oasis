@@ -9,6 +9,7 @@ function kaia_defaults() {
 		'api_key'         => '',
 		'model'           => 'claude-sonnet-5-5',
 		'company_name'    => '神清',
+		'widget_title'    => '簡単お困りごと診断',
 		'post_type'       => 'post',
 		'category'        => 0,
 		'article_cats'    => array(),
@@ -42,6 +43,7 @@ function kaia_sanitize( $in ) {
 		'api_key'         => empty( $in['api_key'] ) ? $old['api_key'] : sanitize_text_field( $in['api_key'] ),
 		'model'           => sanitize_text_field( $in['model'] ?? '' ),
 		'company_name'    => sanitize_text_field( $in['company_name'] ?? '' ),
+		'widget_title'    => sanitize_text_field( $in['widget_title'] ?? '' ) ?: '簡単お困りごと診断',
 		'post_type'       => sanitize_key( $in['post_type'] ?? 'post' ),
 		'category'        => absint( $in['category'] ?? 0 ),
 		'article_cats'    => array_values( array_filter( array_map( 'absint', (array) ( $in['article_cats'] ?? array() ) ) ) ),
@@ -79,6 +81,7 @@ function kaia_render_settings() {
 					<p class="description">wp-config.php に <code>define( 'KAIA_API_KEY', '...' );</code> と書けば、こちらより優先されます(推奨)。</p></td></tr>
 				<tr><th>モデル</th><td><input type="text" class="regular-text" name="<?php echo esc_attr( $f( 'model' ) ); ?>" value="<?php echo esc_attr( $o['model'] ); ?>"></td></tr>
 				<tr><th>会社名</th><td><input type="text" class="regular-text" name="<?php echo esc_attr( $f( 'company_name' ) ); ?>" value="<?php echo esc_attr( $o['company_name'] ); ?>"></td></tr>
+				<tr><th>チャットの名前</th><td><input type="text" class="regular-text" name="<?php echo esc_attr( $f( 'widget_title' ) ); ?>" value="<?php echo esc_attr( $o['widget_title'] ); ?>"></td></tr>
 				<tr><th>施工事例の投稿タイプ</th><td>
 					<select name="<?php echo esc_attr( $f( 'post_type' ) ); ?>">
 						<?php foreach ( $types as $t ) : ?>

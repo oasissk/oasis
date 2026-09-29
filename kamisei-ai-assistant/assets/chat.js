@@ -6,12 +6,27 @@
   var history = [];
   if (AI) { try { history = JSON.parse(sessionStorage.getItem(STORE) || '[]'); } catch (e) {} }
 
+  var TITLE = KAIA.title || '簡単お困りごと診断';
+  var AVATAR =
+    '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<rect width="64" height="64" fill="#dbe8f7"/>' +
+    '<path d="M8 64c2-12 12-18 24-18s22 6 24 18z" fill="#12305f"/>' +
+    '<path d="M27 40h10v9c0 3-2.5 5-5 5s-5-2-5-5z" fill="#f2c4a2"/>' +
+    '<path d="M27 46l5 6 5-6" fill="#fff"/>' +
+    '<path d="M15 34c-2-17 6-27 17-27s19 10 17 27c-.5 7-2 11-4 13l-2-4c1-5 0-10-1-14-6-1-12-4-16-9-3 5-6 9-7 14-1 4 0 9 1 13l-2 4c-2-3-3-7-3-13z" fill="#3a2a25"/>' +
+    '<ellipse cx="32" cy="29" rx="12.5" ry="14.5" fill="#f8d7bb"/>' +
+    '<path d="M19.5 27c1-8 6-13 12.5-13 6 0 11 4 12.5 12-4-1-9-4-12-8-2 4-8 8-13 9z" fill="#3a2a25"/>' +
+    '<circle cx="27" cy="30" r="1.6" fill="#3a2a25"/><circle cx="37" cy="30" r="1.6" fill="#3a2a25"/>' +
+    '<circle cx="23.5" cy="34" r="2.6" fill="#f4a9a0" opacity=".55"/><circle cx="40.5" cy="34" r="2.6" fill="#f4a9a0" opacity=".55"/>' +
+    '<path d="M28 36.5c2.5 2.4 5.5 2.4 8 0" stroke="#b5544a" stroke-width="1.6" fill="none" stroke-linecap="round"/>' +
+    '</svg>';
+
   var root = document.createElement('div');
   root.id = 'kaia-root';
   root.innerHTML =
-    '<button class="kaia-fab" type="button"></button>' +
-    '<div class="kaia-panel" role="dialog" aria-label="相談">' +
-    '<div class="kaia-head"><span></span><button type="button" aria-label="閉じる">×</button></div>' +
+    '<button class="kaia-fab" type="button"><span class="kaia-ava">' + AVATAR + '</span><span><b></b><small>無料・1分・選ぶだけ</small></span></button>' +
+    '<div class="kaia-panel" role="dialog" aria-label="' + TITLE + '">' +
+    '<div class="kaia-head"><span class="kaia-ava">' + AVATAR + '</span><span class="kaia-title"><b></b><small></small></span><button class="kaia-close" type="button" aria-label="閉じる">×</button></div>' +
     '<div class="kaia-log" aria-live="polite"></div>' +
     '<div class="kaia-note"></div>' +
     '<form class="kaia-form"><textarea maxlength="1000"></textarea><button type="submit"></button></form>' +
@@ -23,8 +38,9 @@
   var input = form.querySelector('textarea');
   var send = form.querySelector('button');
 
-  root.querySelector('.kaia-fab').textContent = AI ? '💬 リフォームのご相談' : '💬 お困りごと相談';
-  root.querySelector('.kaia-head span').textContent = KAIA.company + (AI ? ' 相談アシスタント' : ' お困りごと相談');
+  root.querySelector('.kaia-fab b').textContent = TITLE;
+  root.querySelector('.kaia-head b').textContent = TITLE;
+  root.querySelector('.kaia-head small').textContent = KAIA.company + 'が屋根・雨漏りのお悩みを一緒に整理します';
   input.placeholder = AI ? 'ご要望をお書きください' : 'キーワードで探すこともできます';
   send.textContent = AI ? '送信' : '検索';
 
@@ -43,7 +59,13 @@
     if (text) e.textContent = text;
     return e;
   }
-  function addMsg(text, who) { var d = el('div', 'kaia-msg ' + who, text); log.appendChild(d); scroll(); return d; }
+  function addMsg(text, who) {
+    var row = el('div', 'kaia-row ' + who);
+    if (who === 'ai') { var a = el('span', 'kaia-ava'); a.innerHTML = AVATAR; row.appendChild(a); }
+    row.appendChild(el('div', 'kaia-msg', text));
+    log.appendChild(row); scroll();
+    return row;
+  }
 
   function addCards(cases) {
     if (!cases || !cases.length) return;
@@ -84,12 +106,14 @@
   function addInquiryForm(prefill) {
     var f = el('form', 'kaia-inq');
     f.innerHTML =
-      '<label>お名前<input name="name" required maxlength="100"></label>' +
-      '<label>電話番号またはメール<input name="contact" required maxlength="200"></label>' +
-      '<label>ご相談内容<textarea name="message" rows="3" maxlength="1000"></textarea></label>' +
+      '<h4>担当者に相談する</h4>' +
+      '<p class="kaia-sub">' + KAIA.company + 'の担当者が、内容を確認してご連絡します。</p>' +
+      '<label><span>お名前<em class="kaia-req">必須</em></span><input name="name" required maxlength="100" autocomplete="name"></label>' +
+      '<label><span>電話番号またはメール<em class="kaia-req">必須</em></span><input name="contact" required maxlength="200" autocomplete="tel"></label>' +
+      '<label><span>ご相談内容</span><textarea name="message" maxlength="1000"></textarea></label>' +
       '<input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">' +
-      '<label class="kaia-consent"><input type="checkbox" name="consent"> 個人情報の取り扱いに同意します</label>' +
-      '<button type="submit">送信する</button>';
+      '<label class="kaia-consent"><input type="checkbox" name="consent"><span>個人情報の取り扱いに同意します' + (KAIA.privacy ? '(<a href="' + KAIA.privacy + '" target="_blank" rel="noopener">詳細</a>)' : '') + '</span></label>' +
+      '<button type="submit">この内容で送信する</button>';
     if (prefill) f.querySelector('textarea').value = prefill;
     f.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -211,7 +235,7 @@
   }
 
   root.querySelector('.kaia-fab').addEventListener('click', function () { root.classList.add('open'); input.focus(); scroll(); });
-  root.querySelector('.kaia-head button').addEventListener('click', function () { root.classList.remove('open'); });
+  root.querySelector('.kaia-close').addEventListener('click', function () { root.classList.remove('open'); });
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();

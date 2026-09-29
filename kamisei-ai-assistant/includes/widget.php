@@ -14,6 +14,7 @@ add_action( 'wp_enqueue_scripts', function () {
 		'endpoint'    => esc_url_raw( rest_url( 'kaia/v1/' ) ),
 		'greeting'    => kaia_get( 'greeting' ),
 		'company'     => kaia_get( 'company_name' ),
+		'title'       => kaia_get( 'widget_title' ),
 		'phone'       => kaia_get( 'phone' ),
 		'reservation' => kaia_get( 'reservation_url' ),
 		'privacy'     => kaia_get( 'privacy_url' ),
