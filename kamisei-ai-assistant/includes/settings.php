@@ -20,6 +20,7 @@ function kaia_defaults() {
 		'greeting'        => 'こんにちは!屋根・雨漏り・外壁などのお困りごとをお聞かせください。',
 		'extra_prompt'    => '',
 		'rate_limit'      => 20,
+		'synonyms'        => "バルコニー,ベランダ,陸屋根,屋上\n雨漏り,雨漏れ,水漏れ\n瓦,屋根瓦,瓦屋根\nスカイライトチューブ,天窓,トップライト\n外壁,サイディング,モルタル\n防水,防水工事,防水塗装\n台風,強風,風災\nスレート,カラーベスト,コロニアル",
 	);
 }
 
@@ -54,6 +55,7 @@ function kaia_sanitize( $in ) {
 		'greeting'        => sanitize_text_field( $in['greeting'] ?? '' ),
 		'extra_prompt'    => sanitize_textarea_field( $in['extra_prompt'] ?? '' ),
 		'rate_limit'      => max( 1, (int) ( $in['rate_limit'] ?? 20 ) ),
+		'synonyms'        => sanitize_textarea_field( $in['synonyms'] ?? '' ),
 	);
 	return $out;
 }
@@ -112,10 +114,70 @@ function kaia_render_settings() {
 				<tr><th>最初のあいさつ</th><td><input type="text" class="large-text" name="<?php echo esc_attr( $f( 'greeting' ) ); ?>" value="<?php echo esc_attr( $o['greeting'] ); ?>"></td></tr>
 				<tr><th>追加の指示</th><td><textarea class="large-text" rows="5" name="<?php echo esc_attr( $f( 'extra_prompt' ) ); ?>"><?php echo esc_textarea( $o['extra_prompt'] ); ?></textarea>
 					<p class="description">対応エリア、得意な工事、料金の考え方など、AIに伝えておきたいことを書きます。</p></td></tr>
+				<tr><th>言い換え(検索用)</th><td><textarea class="large-text" rows="7" name="<?php echo esc_attr( $f( 'synonyms' ) ); ?>"><?php echo esc_textarea( $o['synonyms'] ); ?></textarea>
+					<p class="description">同じ意味の言葉を、1行にカンマ区切りで書きます。どれか1つで検索すると、ほかの言葉の記事も見つかります(例: バルコニー,ベランダ)。</p></td></tr>
 				<tr><th>1時間あたりの上限(1人)</th><td><input type="number" min="1" name="<?php echo esc_attr( $f( 'rate_limit' ) ); ?>" value="<?php echo esc_attr( $o['rate_limit'] ); ?>"> 回<p class="description">API利用料の暴走を防ぎます。</p></td></tr>
 			</table>
 			<?php submit_button(); ?>
 		</form>
+		<?php kaia_render_search_test(); ?>
 	</div>
 	<?php
+}
+
+/** 設定画面の「検索テスト」: 何が、なぜ出る/出ないかを確認する。 */
+function kaia_render_search_test() {
+	$q = isset( $_GET['kaia_test'] ) ? sanitize_text_field( wp_unslash( $_GET['kaia_test'] ) ) : '';
+	?>
+	<hr>
+	<h2>検索テスト</h2>
+	<p>お客様が入力しそうな言葉や文章を入れて、どんな事例・記事が出るかを確認できます。(上の設定を保存してから試してください)</p>
+	<form method="get" action="">
+		<input type="hidden" name="page" value="kaia">
+		<input type="text" class="regular-text" name="kaia_test" value="<?php echo esc_attr( $q ); ?>" placeholder="例: バルコニー / 2階のバルコニーから雨漏りしている">
+		<?php submit_button( 'テスト', 'secondary', '', false ); ?>
+	</form>
+	<?php
+	if ( '' === $q ) {
+		return;
+	}
+	$terms = kaia_build_terms( $q );
+	echo '<p><strong>使った検索語:</strong> ';
+	foreach ( $terms as $t => $w ) {
+		echo esc_html( $t ) . ( 2 === $w ? '' : '(言い換え)' ) . ' / ';
+	}
+	echo '</p>';
+
+	$list = function ( $title, $rows ) {
+		echo '<h3>' . esc_html( $title ) . '</h3>';
+		if ( ! $rows ) {
+			echo '<p>該当なし</p>';
+			return;
+		}
+		echo '<ol>';
+		foreach ( $rows as $r ) {
+			echo '<li><a href="' . esc_url( $r['url'] ) . '" target="_blank" rel="noopener">' . esc_html( $r['title'] ) . '</a> <small>(点数 ' . (int) $r['score'] . ')</small></li>';
+		}
+		echo '</ol>';
+	};
+	$list( '施工事例として出るもの', kaia_search_cases( $q ) );
+	$list( '参考記事として出るもの', kaia_search_articles( $q ) );
+
+	// カテゴリーで絞らない場合(なぜ出ないかの手がかり)
+	$scope = array_merge( kaia_scope_ids( kaia_case_cats() ), kaia_scope_ids( (array) kaia_get( 'article_cats' ) ) );
+	echo '<h3>参考: カテゴリーで絞らずに探した場合(上位10件)</h3>';
+	$all = kaia_search_posts( $q, array(), 'case', 10, true );
+	if ( ! $all ) {
+		echo '<p>サイト全体でも見つかりません。記事のタイトル・本文・タグに、この言葉(や言い換え)が含まれていない可能性があります。「言い換え」に追加してみてください。</p>';
+		return;
+	}
+	echo '<table class="widefat striped" style="max-width:900px"><thead><tr><th>記事</th><th>カテゴリー</th><th>紹介の対象</th></tr></thead><tbody>';
+	foreach ( $all as $r ) {
+		$cids  = wp_get_post_categories( $r['id'] );
+		$names = wp_list_pluck( wp_get_post_categories( $r['id'], array( 'fields' => 'all' ) ), 'name' );
+		$in    = (bool) array_intersect( $cids, $scope );
+		echo '<tr><td><a href="' . esc_url( $r['url'] ) . '" target="_blank" rel="noopener">' . esc_html( $r['title'] ) . '</a></td><td>' . esc_html( implode( '、', $names ) ) . '</td><td>' . ( $in ? '○ 対象' : '× 対象外のカテゴリー' ) . '</td></tr>';
+	}
+	echo '</tbody></table>';
+	echo '<p class="description">「× 対象外」に見たい事例が並んでいる場合は、上の「施工事例のカテゴリー」「参考記事のカテゴリー」にそのカテゴリーを追加してください。</p>';
 }

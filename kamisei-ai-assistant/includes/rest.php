@@ -70,7 +70,9 @@ function kaia_rest_search( WP_REST_Request $req ) {
 	if ( is_wp_error( $ok ) ) {
 		return $ok;
 	}
-	$kw = mb_substr( sanitize_text_field( (string) $req->get_param( 'keywords' ) ), 0, 100 );
+	$kw = mb_substr( sanitize_text_field( (string) $req->get_param( 'keywords' ) ), 0, 100 )
+		. ' ' . mb_substr( sanitize_text_field( (string) $req->get_param( 'text' ) ), 0, 500 );
+	$kw = trim( $kw );
 	if ( '' === $kw ) {
 		return new WP_Error( 'kaia_bad', 'キーワードを入力してください。', array( 'status' => 400 ) );
 	}

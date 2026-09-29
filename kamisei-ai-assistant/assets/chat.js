@@ -206,7 +206,7 @@
       addMsg('今まさに雨漏りしている場合は、屋根には登らず、お急ぎでしたらお電話ください。室内は、バケツやタオルで被害を広げないようにしてください。', 'ai');
     }
     var wait = addMsg('近い事例を探しています…', 'ai');
-    post('search', { keywords: kws.slice(0, 5).join(' ') || '屋根' }).then(function (res) {
+    post('search', { keywords: kws.slice(0, 5).join(' ') || (free ? '' : '屋根'), text: free || '' }).then(function (res) {
       wait.remove();
       if (res.ok && res.j.cases.length) { addMsg('近い事例・記事です。', 'ai'); addCards(res.j.cases); }
       else { addMsg('ぴったりの事例は見つかりませんでした。担当者がお話をうかがいます。', 'ai'); }
