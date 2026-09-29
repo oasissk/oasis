@@ -20,5 +20,6 @@ require_once KAIA_DIR . 'includes/settings.php';
 require_once KAIA_DIR . 'includes/cases.php';
 require_once KAIA_DIR . 'includes/leads.php';
 require_once KAIA_DIR . 'includes/claude.php';
+require_once KAIA_DIR . 'includes/flow.php';
 require_once KAIA_DIR . 'includes/rest.php';
 require_once KAIA_DIR . 'includes/widget.php';

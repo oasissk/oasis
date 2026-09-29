@@ -23,9 +23,9 @@
   var input = form.querySelector('textarea');
   var send = form.querySelector('button');
 
-  root.querySelector('.kaia-fab').textContent = AI ? '💬 リフォームのご相談' : '🔍 事例を探す';
-  root.querySelector('.kaia-head span').textContent = KAIA.company + (AI ? ' 相談アシスタント' : ' 事例検索');
-  input.placeholder = AI ? 'ご要望をお書きください' : 'キーワード(例: 雨漏り 瓦)';
+  root.querySelector('.kaia-fab').textContent = AI ? '💬 リフォームのご相談' : '💬 お困りごと相談';
+  root.querySelector('.kaia-head span').textContent = KAIA.company + (AI ? ' 相談アシスタント' : ' お困りごと相談');
+  input.placeholder = AI ? 'ご要望をお書きください' : 'キーワードで探すこともできます';
   send.textContent = AI ? '送信' : '検索';
 
   var note = root.querySelector('.kaia-note');
@@ -60,11 +60,11 @@
     log.appendChild(wrap); scroll();
   }
 
-  function addActions(withInquiry) {
+  function addActions(withInquiry, prefill) {
     var wrap = el('div', 'kaia-actions');
     if (withInquiry) {
       var b = el('button', '', '担当者に相談する'); b.type = 'button';
-      b.addEventListener('click', function () { b.remove(); addInquiryForm(); });
+      b.addEventListener('click', function () { b.remove(); addInquiryForm(prefill); });
       wrap.appendChild(b);
     }
     if (KAIA.reservation) { var r = el('a', '', '現地調査を予約する'); r.href = KAIA.reservation; wrap.appendChild(r); }
@@ -81,7 +81,7 @@
   }
 
   // ---- 問い合わせフォーム(検索のみモード)
-  function addInquiryForm() {
+  function addInquiryForm(prefill) {
     var f = el('form', 'kaia-inq');
     f.innerHTML =
       '<label>お名前<input name="name" required maxlength="100"></label>' +
@@ -90,6 +90,7 @@
       '<input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">' +
       '<label class="kaia-consent"><input type="checkbox" name="consent"> 個人情報の取り扱いに同意します</label>' +
       '<button type="submit">送信する</button>';
+    if (prefill) f.querySelector('textarea').value = prefill;
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var d = new FormData(f), btn = f.querySelector('button');
@@ -122,6 +123,68 @@
       .finally(function () { send.disabled = false; input.focus(); });
   }
 
+
+  // ---- ヒアリング(検索のみモード)
+  var answers = [], kws = [], urgent = false, awaitFree = false, chipsEl = null;
+
+  function askChips(labels, onPick) {
+    chipsEl = el('div', 'kaia-actions');
+    labels.forEach(function (l, i) {
+      var b = el('button', '', l); b.type = 'button';
+      b.addEventListener('click', function () { if (chipsEl) { chipsEl.remove(); chipsEl = null; } onPick(i); });
+      chipsEl.appendChild(b);
+    });
+    log.appendChild(chipsEl); scroll();
+  }
+
+  function startFlow() {
+    answers = []; kws = []; urgent = false; awaitFree = false;
+    askStep('start');
+  }
+
+  function askStep(id) {
+    if (id === 'free') {
+      awaitFree = true;
+      addMsg('最後に、ほかに気になること(場所・状況など)があればご記入ください。なければ「なし」を押してください。', 'ai');
+      askChips(['なし'], function () { finishFlow(''); });
+      return;
+    }
+    var step = KAIA.flow[id];
+    if (!step) { finishFlow(''); return; }
+    addMsg(step.q, 'ai');
+    askChips(step.opts.map(function (o) { return o.label; }), function (i) {
+      var o = step.opts[i];
+      addMsg(o.label, 'me');
+      answers.push(step.key + ': ' + o.label);
+      (o.kw || []).forEach(function (k) { if (kws.indexOf(k) < 0) kws.push(k); });
+      if (o.urgent) urgent = true;
+      askStep(o.next || 'free');
+    });
+  }
+
+  function finishFlow(free) {
+    awaitFree = false;
+    if (free) { addMsg(free, 'me'); answers.push('ほかに気になること: ' + free); }
+    var summary = answers.join('\n');
+    addMsg('ご相談内容を整理しました。\n\n' + summary, 'ai');
+    if (urgent) {
+      addMsg('今まさに雨漏りしている場合は、屋根には登らず、お急ぎでしたらお電話ください。室内は、バケツやタオルで被害を広げないようにしてください。', 'ai');
+    }
+    var wait = addMsg('近い事例を探しています…', 'ai');
+    post('search', { keywords: kws.slice(0, 5).join(' ') || '屋根' }).then(function (res) {
+      wait.remove();
+      if (res.ok && res.j.cases.length) { addMsg('近い事例・記事です。', 'ai'); addCards(res.j.cases); }
+      else { addMsg('ぴったりの事例は見つかりませんでした。担当者がお話をうかがいます。', 'ai'); }
+    }).catch(function () { wait.remove(); })
+      .finally(function () {
+        addActions(true, 'ご相談内容(チャットで選択):\n' + summary);
+        var again = el('div', 'kaia-actions');
+        var b = el('button', '', '最初からやり直す'); b.type = 'button';
+        b.addEventListener('click', function () { again.remove(); startFlow(); });
+        again.appendChild(b); log.appendChild(again); scroll();
+      });
+  }
+
   // ---- AIモード
   function runChat(text) {
     addMsg(text, 'me');
@@ -143,16 +206,8 @@
   if (AI && history.length) {
     history.forEach(function (m) { addMsg(m.content, m.role === 'user' ? 'me' : 'ai'); });
   } else {
-    addMsg(AI ? KAIA.greeting : 'お探しの場所や工事内容を選ぶか、言葉で入力してください。', 'ai');
-    if (!AI && KAIA.quick && KAIA.quick.length) {
-      var chips = el('div', 'kaia-actions');
-      KAIA.quick.forEach(function (q) {
-        var b = el('button', '', q); b.type = 'button';
-        b.addEventListener('click', function () { runSearch(q); });
-        chips.appendChild(b);
-      });
-      log.appendChild(chips);
-    }
+    addMsg(KAIA.greeting, 'ai');
+    if (!AI) startFlow();
   }
 
   root.querySelector('.kaia-fab').addEventListener('click', function () { root.classList.add('open'); input.focus(); scroll(); });
@@ -163,6 +218,8 @@
     var text = input.value.trim();
     if (!text) return;
     input.value = '';
-    AI ? runChat(text) : runSearch(text);
+    if (AI) runChat(text);
+    else if (awaitFree) { if (chipsEl) { chipsEl.remove(); chipsEl = null; } finishFlow(text); }
+    else runSearch(text);
   });
 })();

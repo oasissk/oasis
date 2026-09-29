@@ -19,7 +19,6 @@ function kaia_defaults() {
 		'greeting'        => 'こんにちは!屋根・雨漏り・外壁などのお困りごとをお聞かせください。',
 		'extra_prompt'    => '',
 		'rate_limit'      => 20,
-		'quick_keywords'  => "雨漏り\n屋根修理\n屋根工事\n瓦屋根\nスレート屋根\nスカイライトチューブ\n外壁工事\n防水工事\n台風",
 	);
 }
 
@@ -53,7 +52,6 @@ function kaia_sanitize( $in ) {
 		'greeting'        => sanitize_text_field( $in['greeting'] ?? '' ),
 		'extra_prompt'    => sanitize_textarea_field( $in['extra_prompt'] ?? '' ),
 		'rate_limit'      => max( 1, (int) ( $in['rate_limit'] ?? 20 ) ),
-		'quick_keywords'  => sanitize_textarea_field( $in['quick_keywords'] ?? '' ),
 	);
 	return $out;
 }
@@ -111,8 +109,6 @@ function kaia_render_settings() {
 				<tr><th>最初のあいさつ</th><td><input type="text" class="large-text" name="<?php echo esc_attr( $f( 'greeting' ) ); ?>" value="<?php echo esc_attr( $o['greeting'] ); ?>"></td></tr>
 				<tr><th>追加の指示</th><td><textarea class="large-text" rows="5" name="<?php echo esc_attr( $f( 'extra_prompt' ) ); ?>"><?php echo esc_textarea( $o['extra_prompt'] ); ?></textarea>
 					<p class="description">対応エリア、得意な工事、料金の考え方など、AIに伝えておきたいことを書きます。</p></td></tr>
-				<tr><th>検索ボタンの項目</th><td><textarea class="regular-text" rows="6" name="<?php echo esc_attr( $f( 'quick_keywords' ) ); ?>"><?php echo esc_textarea( $o['quick_keywords'] ); ?></textarea>
-					<p class="description">検索のみモードで並べるボタン。1行に1つ書きます(最大10個)。</p></td></tr>
 				<tr><th>1時間あたりの上限(1人)</th><td><input type="number" min="1" name="<?php echo esc_attr( $f( 'rate_limit' ) ); ?>" value="<?php echo esc_attr( $o['rate_limit'] ); ?>"> 回<p class="description">API利用料の暴走を防ぎます。</p></td></tr>
 			</table>
 			<?php submit_button(); ?>
