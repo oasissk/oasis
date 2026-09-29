@@ -31,11 +31,11 @@ function kaia_vocab() {
 
 /**
  * 入力(キーワードや自由記入の文章)から、重み付きの検索語を作る。
- * 2 = 入力そのもの・文中に見つかった語 / 1 = 言い換え・ひらがなカタカナ違い
+ * 2 = 入力そのもの・文中に見つかった語 / 1 = 言い換え・ひらがなカタカナ違い(それぞれ $scale 倍)
  *
  * @return array<string,int>
  */
-function kaia_build_terms( $input ) {
+function kaia_build_terms( $input, $scale = 1 ) {
 	$input   = trim( (string) $input );
 	$primary = array();
 
@@ -62,13 +62,13 @@ function kaia_build_terms( $input ) {
 
 	$terms = array();
 	foreach ( $primary as $p ) {
-		$terms[ $p ] = 2;
+		$terms[ $p ] = 2 * $scale;
 	}
 	// 3) 言い換え
 	foreach ( kaia_synonym_groups() as $g ) {
 		if ( array_intersect( array_map( 'mb_strtolower', $g ), array_map( 'mb_strtolower', $primary ) ) ) {
 			foreach ( $g as $alt ) {
-				$terms[ $alt ] = $terms[ $alt ] ?? 1;
+				$terms[ $alt ] = $terms[ $alt ] ?? $scale;
 			}
 		}
 	}
@@ -80,11 +80,24 @@ function kaia_build_terms( $input ) {
 		foreach ( array( 'C', 'c' ) as $mode ) {
 			$alt = mb_convert_kana( $p, $mode );
 			if ( $alt !== $p ) {
-				$terms[ $alt ] = $terms[ $alt ] ?? 1;
+				$terms[ $alt ] = $terms[ $alt ] ?? $scale;
 			}
 		}
 	}
 	return array_slice( $terms, 0, 8, true );
+}
+
+/**
+ * 診断で選んだ言葉($keywords)と、お客様が自分で書いた文章($text)から検索語を作る。
+ * 自分で書いた言葉のほうが具体的なので、2倍の重みにする。
+ */
+function kaia_terms_for( $keywords, $text = '' ) {
+	$terms = kaia_build_terms( $keywords, 1 );
+	foreach ( kaia_build_terms( $text, 2 ) as $t => $w ) {
+		$terms[ $t ] = max( $terms[ $t ] ?? 0, $w );
+	}
+	arsort( $terms );
+	return array_slice( $terms, 0, 10, true );
 }
 
 /** 選んだカテゴリーとその子カテゴリーのID。 */
@@ -107,7 +120,7 @@ function kaia_search_posts( $input, array $cat_ids, $kind, $limit = 3, $unrestri
 	if ( ! $cat_ids && ! $unrestricted ) {
 		return array(); // カテゴリー未設定なら何も紹介しない(ブログ等の混入防止)
 	}
-	$terms = kaia_build_terms( $input );
+	$terms = is_array( $input ) ? $input : kaia_build_terms( $input );
 	if ( ! $terms ) {
 		return array();
 	}
@@ -125,11 +138,14 @@ function kaia_search_posts( $input, array $cat_ids, $kind, $limit = 3, $unrestri
 	}
 	$taxes  = array_values( array_intersect( array( 'category', 'post_tag' ), get_object_taxonomies( $post_type ) ) );
 	$scores = array();
+	$best   = array(); // 当たった語の最大の重み
+	$tbest  = array(); // タイトルに入っていた語の最大の重み
 
 	foreach ( $terms as $term => $w ) {
 		$q = new WP_Query( $base + array( 's' => $term ) ); // タイトル・本文・抜粋
 		foreach ( $q->posts as $id ) {
 			$scores[ $id ] = ( $scores[ $id ] ?? 0 ) + $w;
+			$best[ $id ]   = max( $best[ $id ] ?? 0, $w );
 		}
 		if ( $taxes ) {                                       // タグ名・カテゴリー名
 			$ids = get_terms( array( 'taxonomy' => $taxes, 'name__like' => $term, 'fields' => 'ids', 'hide_empty' => true ) );
@@ -142,20 +158,20 @@ function kaia_search_posts( $input, array $cat_ids, $kind, $limit = 3, $unrestri
 				$q = new WP_Query( $base + array( 'tax_query' => array( $or ) ) );
 				foreach ( $q->posts as $id ) {
 					$scores[ $id ] = ( $scores[ $id ] ?? 0 ) + $w;
+					$best[ $id ]   = max( $best[ $id ] ?? 0, $w );
 				}
 			}
 		}
 	}
 
 	// 入力した言葉がタイトルに入っている記事は最優先
-	$primary = array_keys( array_filter( $terms, function ( $w ) {
-		return $w >= 2;
-	} ) );
+	// (重み2の語で+10。お客様が自分で書いた語は重み4なので+20)
 	foreach ( array_keys( $scores ) as $id ) {
 		$title = get_the_title( $id );
-		foreach ( $primary as $p ) {
-			if ( false !== mb_stripos( $title, $p ) ) {
-				$scores[ $id ] += 10;
+		foreach ( $terms as $t => $w ) {
+			if ( $w >= 2 && false !== mb_stripos( $title, $t ) ) {
+				$scores[ $id ] += 5 * $w;
+				$tbest[ $id ]   = max( $tbest[ $id ] ?? 0, $w );
 			}
 		}
 	}
@@ -163,17 +179,22 @@ function kaia_search_posts( $input, array $cat_ids, $kind, $limit = 3, $unrestri
 	if ( ! $scores ) {
 		return array();
 	}
-	arsort( $scores );
+	// 並べ方: ①タイトルに入っていた語の重み ②当たった語の重み ③点数
+	$ids = array_keys( $scores );
+	usort( $ids, function ( $a, $b ) use ( $scores, $best, $tbest ) {
+		return array( $tbest[ $b ] ?? 0, $best[ $b ] ?? 0, $scores[ $b ] ) <=> array( $tbest[ $a ] ?? 0, $best[ $a ] ?? 0, $scores[ $a ] );
+	} );
 
 	$out = array();
-	foreach ( array_slice( array_keys( $scores ), 0, $limit, true ) as $id ) {
+	foreach ( array_slice( $ids, 0, $limit ) as $id ) {
 		$out[] = array(
 			'id'      => $id,
 			'kind'    => $kind,
 			'score'   => $scores[ $id ],
+			'rank'    => array( $tbest[ $id ] ?? 0, $best[ $id ] ?? 0, $scores[ $id ] ),
 			'title'   => get_the_title( $id ),
 			'url'     => get_permalink( $id ),
-			'summary' => wp_trim_words( wp_strip_all_tags( get_post_field( 'post_content', $id ) ), 60, '…' ),
+			'summary' => kaia_summary( $id ),
 			'image'   => (string) get_the_post_thumbnail_url( $id, 'medium' ),
 		);
 	}
@@ -185,12 +206,12 @@ function kaia_case_cats() {
 	return $cat ? array( $cat ) : array();
 }
 
-function kaia_search_cases( $input ) {
-	return kaia_search_posts( $input, kaia_case_cats(), 'case', 3 );
+function kaia_search_cases( $input, $limit = 3 ) {
+	return kaia_search_posts( $input, kaia_case_cats(), 'case', $limit );
 }
 
-function kaia_search_articles( $input ) {
-	return kaia_search_posts( $input, (array) kaia_get( 'article_cats' ), 'article', 2 );
+function kaia_search_articles( $input, $limit = 2 ) {
+	return kaia_search_posts( $input, (array) kaia_get( 'article_cats' ), 'article', $limit );
 }
 
 /**
@@ -202,13 +223,17 @@ function kaia_rank_results( array $rows, $limit = 5 ) {
 		return array();
 	}
 	usort( $rows, function ( $a, $b ) {
-		return $b['score'] <=> $a['score'];
+		return $b['rank'] <=> $a['rank'];
 	} );
-	$min  = max( 2, $rows[0]['score'] * 0.3 );
+	$min  = 3; // ほとんど関係ないもの(点数1〜2)は出さない
 	$out  = array();
 	$seen = array();
 	foreach ( $rows as $r ) {
 		if ( $r['score'] < $min || isset( $seen[ $r['id'] ] ) ) {
+			continue;
+		}
+		// タイトルに言葉が入った記事があるときは、本文にしか出てこない弱いものは外す
+		if ( $rows[0]['rank'][0] > 0 && 0 === $r['rank'][0] && $r['score'] < $rows[0]['score'] * 0.4 ) {
 			continue;
 		}
 		$seen[ $r['id'] ] = true;
@@ -216,4 +241,12 @@ function kaia_rank_results( array $rows, $limit = 5 ) {
 	}
 	// 1件もしきい値を超えない場合でも、一番上だけは出す
 	return array_slice( $out ?: array( $rows[0] ), 0, $limit );
+}
+
+/** 本文から表示用の短い要約を作る(ショートコード・タグ・&nbsp; などを除く)。 */
+function kaia_summary( $id ) {
+	$text = strip_shortcodes( (string) get_post_field( 'post_content', $id ) );
+	$text = html_entity_decode( wp_strip_all_tags( $text ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+	$text = trim( preg_replace( '/[\s\x{00A0}\x{3000}]+/u', ' ', $text ) );
+	return wp_trim_words( $text, 60, '…' );
 }

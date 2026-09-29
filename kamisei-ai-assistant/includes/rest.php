@@ -70,14 +70,14 @@ function kaia_rest_search( WP_REST_Request $req ) {
 	if ( is_wp_error( $ok ) ) {
 		return $ok;
 	}
-	$kw = mb_substr( sanitize_text_field( (string) $req->get_param( 'keywords' ) ), 0, 100 )
-		. ' ' . mb_substr( sanitize_text_field( (string) $req->get_param( 'text' ) ), 0, 500 );
-	$kw = trim( $kw );
-	if ( '' === $kw ) {
+	$kw    = mb_substr( sanitize_text_field( (string) $req->get_param( 'keywords' ) ), 0, 100 );
+	$text  = mb_substr( sanitize_text_field( (string) $req->get_param( 'text' ) ), 0, 500 );
+	$terms = kaia_terms_for( $kw, $text );
+	if ( ! $terms ) {
 		return new WP_Error( 'kaia_bad', 'キーワードを入力してください。', array( 'status' => 400 ) );
 	}
 	return array(
-		'cases' => kaia_rank_results( array_merge( kaia_search_cases( $kw ), kaia_search_articles( $kw ) ) ),
+		'cases' => kaia_rank_results( array_merge( kaia_search_cases( $terms, 5 ), kaia_search_articles( $terms, 5 ) ) ),
 	);
 }
 

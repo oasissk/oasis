@@ -130,24 +130,26 @@ function kaia_render_settings() {
 
 /** 設定画面の「検索テスト」: 何が、なぜ出る/出ないかを確認する。 */
 function kaia_render_search_test() {
-	$q = isset( $_GET['kaia_test'] ) ? sanitize_text_field( wp_unslash( $_GET['kaia_test'] ) ) : '';
+	$q  = isset( $_GET['kaia_test'] ) ? sanitize_text_field( wp_unslash( $_GET['kaia_test'] ) ) : '';
+	$kw = isset( $_GET['kaia_test_kw'] ) ? sanitize_text_field( wp_unslash( $_GET['kaia_test_kw'] ) ) : '';
 	?>
 	<hr>
 	<h2>検索テスト</h2>
 	<p>お客様が入力しそうな言葉や文章を入れて、どんな事例・記事が出るかを確認できます。(上の設定を保存してから試してください)</p>
 	<form method="get" action="">
 		<input type="hidden" name="page" value="kaia">
-		<input type="text" class="regular-text" name="kaia_test" value="<?php echo esc_attr( $q ); ?>" placeholder="例: バルコニー / 2階のバルコニーから雨漏りしている">
+		<p><label>お客様が書いた言葉・文章<br><input type="text" class="regular-text" name="kaia_test" value="<?php echo esc_attr( $q ); ?>" placeholder="例: バルコニー / 2階のバルコニーから雨漏りしている"></label></p>
+		<p><label>診断で選んだ答えの検索語(任意)<br><input type="text" class="regular-text" name="kaia_test_kw" value="<?php echo esc_attr( $kw ); ?>" placeholder="例: 雨漏り 雨漏り修理"></label><br><span class="description">診断の「雨漏りしている → 今まさに漏れている」なら「雨漏り 雨漏り修理」です。</span></p>
 		<?php submit_button( 'テスト', 'secondary', '', false ); ?>
 	</form>
 	<?php
-	if ( '' === $q ) {
+	if ( '' === $q && '' === $kw ) {
 		return;
 	}
-	$terms = kaia_build_terms( $q );
+	$terms = kaia_terms_for( $kw, $q );
 	echo '<p><strong>使った検索語:</strong> ';
 	foreach ( $terms as $t => $w ) {
-		echo esc_html( $t ) . ( 2 === $w ? '' : '(言い換え)' ) . ' / ';
+		echo esc_html( $t ) . '<small>(重み' . (int) $w . ')</small> / ';
 	}
 	echo '</p>';
 
@@ -163,8 +165,8 @@ function kaia_render_search_test() {
 		}
 		echo '</ol>';
 	};
-	$cases    = kaia_search_cases( $q );
-	$articles = kaia_search_articles( $q );
+	$cases    = kaia_search_cases( $terms, 5 );
+	$articles = kaia_search_articles( $terms, 5 );
 	echo '<h3>チャットに表示される順番</h3>';
 	$ranked = kaia_rank_results( array_merge( $cases, $articles ) );
 	if ( $ranked ) {
@@ -182,7 +184,7 @@ function kaia_render_search_test() {
 	// カテゴリーで絞らない場合(なぜ出ないかの手がかり)
 	$scope = array_merge( kaia_scope_ids( kaia_case_cats() ), kaia_scope_ids( (array) kaia_get( 'article_cats' ) ) );
 	echo '<h3>参考: カテゴリーで絞らずに探した場合(上位10件)</h3>';
-	$all = kaia_search_posts( $q, array(), 'case', 10, true );
+	$all = kaia_search_posts( $terms, array(), 'case', 10, true );
 	if ( ! $all ) {
 		echo '<p>サイト全体でも見つかりません。記事のタイトル・本文・タグに、この言葉(や言い換え)が含まれていない可能性があります。「言い換え」に追加してみてください。</p>';
 		return;

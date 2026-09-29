@@ -131,7 +131,7 @@ function kaia_chat( array $messages ) {
 		foreach ( $uses as $use ) {
 			$in = $use['input'] ?? array();
 			if ( in_array( $use['name'], array( 'search_cases', 'search_articles' ), true ) ) {
-				$found = 'search_cases' === $use['name'] ? kaia_search_cases( $in['keywords'] ?? '' ) : kaia_search_articles( $in['keywords'] ?? '' );
+				$found = kaia_rank_results( 'search_cases' === $use['name'] ? kaia_search_cases( $in['keywords'] ?? '', 5 ) : kaia_search_articles( $in['keywords'] ?? '', 5 ), 3 );
 				foreach ( $found as $c ) {
 					$cases[ $c['id'] ] = $c;
 				}
