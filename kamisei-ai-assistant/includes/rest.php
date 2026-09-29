@@ -77,7 +77,7 @@ function kaia_rest_search( WP_REST_Request $req ) {
 		return new WP_Error( 'kaia_bad', 'キーワードを入力してください。', array( 'status' => 400 ) );
 	}
 	return array(
-		'cases' => array_merge( kaia_search_cases( $kw ), kaia_search_articles( $kw ) ),
+		'cases' => kaia_rank_results( array_merge( kaia_search_cases( $kw ), kaia_search_articles( $kw ) ) ),
 	);
 }
 

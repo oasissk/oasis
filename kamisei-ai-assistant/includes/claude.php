@@ -123,7 +123,7 @@ function kaia_chat( array $messages ) {
 			$said[] = trim( $text );
 		}
 		if ( 'tool_use' !== ( $data['stop_reason'] ?? '' ) || ! $uses ) {
-			return array( 'reply' => implode( "\n", $said ), 'cases' => array_values( $cases ), 'handoff' => $handoff );
+			return array( 'reply' => implode( "\n", $said ), 'cases' => kaia_rank_results( array_values( $cases ) ), 'handoff' => $handoff );
 		}
 
 		$messages[] = array( 'role' => 'assistant', 'content' => $data['content'] );

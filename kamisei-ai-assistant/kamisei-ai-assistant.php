@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Kamisei AI Assistant
  * Description: 施工事例をもとにお客様の要望をヒアリングし、近い事例の提案と担当者への引き継ぎを行うAIチャット。
- * Version: 0.3.1
+ * Version: 0.3.2
  * Requires PHP: 7.4
  * Text Domain: kamisei-ai-assistant
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KAIA_VERSION', '0.3.1' );
+define( 'KAIA_VERSION', '0.3.2' );
 define( 'KAIA_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KAIA_URL', plugin_dir_url( __FILE__ ) );
 define( 'KAIA_OPTION', 'kaia_settings' );

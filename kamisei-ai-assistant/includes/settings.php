@@ -163,8 +163,21 @@ function kaia_render_search_test() {
 		}
 		echo '</ol>';
 	};
-	$list( '施工事例として出るもの', kaia_search_cases( $q ) );
-	$list( '参考記事として出るもの', kaia_search_articles( $q ) );
+	$cases    = kaia_search_cases( $q );
+	$articles = kaia_search_articles( $q );
+	echo '<h3>チャットに表示される順番</h3>';
+	$ranked = kaia_rank_results( array_merge( $cases, $articles ) );
+	if ( $ranked ) {
+		echo '<ol>';
+		foreach ( $ranked as $r ) {
+			echo '<li>' . ( 'article' === $r['kind'] ? '【参考記事】' : '【施工事例】' ) . '<a href="' . esc_url( $r['url'] ) . '" target="_blank" rel="noopener">' . esc_html( $r['title'] ) . '</a> <small>(点数 ' . (int) $r['score'] . ')</small></li>';
+		}
+		echo '</ol>';
+	} else {
+		echo '<p>該当なし</p>';
+	}
+	$list( '施工事例の候補', $cases );
+	$list( '参考記事の候補', $articles );
 
 	// カテゴリーで絞らない場合(なぜ出ないかの手がかり)
 	$scope = array_merge( kaia_scope_ids( kaia_case_cats() ), kaia_scope_ids( (array) kaia_get( 'article_cats' ) ) );

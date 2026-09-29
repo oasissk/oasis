@@ -192,3 +192,28 @@ function kaia_search_cases( $input ) {
 function kaia_search_articles( $input ) {
 	return kaia_search_posts( $input, (array) kaia_get( 'article_cats' ), 'article', 2 );
 }
+
+/**
+ * 施工事例・参考記事をまとめて、点数の高い順に並べる。
+ * 一番よく合うものと比べて点数が低すぎるもの(関係の薄いもの)は外す。
+ */
+function kaia_rank_results( array $rows, $limit = 5 ) {
+	if ( ! $rows ) {
+		return array();
+	}
+	usort( $rows, function ( $a, $b ) {
+		return $b['score'] <=> $a['score'];
+	} );
+	$min  = max( 2, $rows[0]['score'] * 0.3 );
+	$out  = array();
+	$seen = array();
+	foreach ( $rows as $r ) {
+		if ( $r['score'] < $min || isset( $seen[ $r['id'] ] ) ) {
+			continue;
+		}
+		$seen[ $r['id'] ] = true;
+		$out[]            = $r;
+	}
+	// 1件もしきい値を超えない場合でも、一番上だけは出す
+	return array_slice( $out ?: array( $rows[0] ), 0, $limit );
+}
