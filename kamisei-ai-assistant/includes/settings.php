@@ -19,6 +19,7 @@ function kaia_defaults() {
 		'greeting'        => 'こんにちは!リフォームのご相談をお手伝いします。どちらを直したいですか?',
 		'extra_prompt'    => '',
 		'rate_limit'      => 20,
+		'quick_keywords'  => "浴室\nキッチン\nトイレ\n洗面\n屋根\n外壁\n床\n階段",
 	);
 }
 
@@ -52,6 +53,7 @@ function kaia_sanitize( $in ) {
 		'greeting'        => sanitize_text_field( $in['greeting'] ?? '' ),
 		'extra_prompt'    => sanitize_textarea_field( $in['extra_prompt'] ?? '' ),
 		'rate_limit'      => max( 1, (int) ( $in['rate_limit'] ?? 20 ) ),
+		'quick_keywords'  => sanitize_textarea_field( $in['quick_keywords'] ?? '' ),
 	);
 	return $out;
 }
@@ -72,6 +74,8 @@ function kaia_render_settings() {
 			<?php settings_fields( 'kaia' ); ?>
 			<table class="form-table" role="presentation">
 				<tr><th>チャットを表示</th><td><label><input type="checkbox" name="<?php echo esc_attr( $f( 'enabled' ) ); ?>" value="1" <?php checked( $o['enabled'] ); ?>> 有効にする</label></td></tr>
+				<tr><th>現在のモード</th><td><strong><?php echo kaia_api_key() ? 'AIチャット' : '検索のみ(APIキー未設定)'; ?></strong>
+					<p class="description">APIキーを入れるとAIチャットに切り替わります。未設定のあいだは、キーワード検索と問い合わせフォームだけで動きます(無料)。</p></td></tr>
 				<tr><th>Anthropic APIキー</th><td>
 					<input type="password" class="regular-text" autocomplete="off" name="<?php echo esc_attr( $f( 'api_key' ) ); ?>" placeholder="<?php echo $o['api_key'] ? '設定済み(変更する場合のみ入力)' : 'sk-ant-...'; ?>">
 					<p class="description">wp-config.php に <code>define( 'KAIA_API_KEY', '...' );</code> と書けば、こちらより優先されます(推奨)。</p></td></tr>
@@ -107,6 +111,8 @@ function kaia_render_settings() {
 				<tr><th>最初のあいさつ</th><td><input type="text" class="large-text" name="<?php echo esc_attr( $f( 'greeting' ) ); ?>" value="<?php echo esc_attr( $o['greeting'] ); ?>"></td></tr>
 				<tr><th>追加の指示</th><td><textarea class="large-text" rows="5" name="<?php echo esc_attr( $f( 'extra_prompt' ) ); ?>"><?php echo esc_textarea( $o['extra_prompt'] ); ?></textarea>
 					<p class="description">対応エリア、得意な工事、料金の考え方など、AIに伝えておきたいことを書きます。</p></td></tr>
+				<tr><th>検索ボタンの項目</th><td><textarea class="regular-text" rows="6" name="<?php echo esc_attr( $f( 'quick_keywords' ) ); ?>"><?php echo esc_textarea( $o['quick_keywords'] ); ?></textarea>
+					<p class="description">検索のみモードで並べるボタン。1行に1つ書きます(最大10個)。</p></td></tr>
 				<tr><th>1時間あたりの上限(1人)</th><td><input type="number" min="1" name="<?php echo esc_attr( $f( 'rate_limit' ) ); ?>" value="<?php echo esc_attr( $o['rate_limit'] ); ?>"> 回<p class="description">API利用料の暴走を防ぎます。</p></td></tr>
 			</table>
 			<?php submit_button(); ?>

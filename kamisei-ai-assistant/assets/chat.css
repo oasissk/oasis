@@ -23,3 +23,10 @@
 .kaia-form button:disabled{opacity:.5}
 .kaia-note{font-size:11px;color:#667;padding:0 12px 8px;background:#fff}
 .kaia-note a{color:inherit}
+.kaia-actions button{background:#fff;border:1px solid #1f6f5c;color:#1f6f5c;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer;font-family:inherit}
+.kaia-inq{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid #e2e5e0;border-radius:10px;padding:10px;margin:0 0 8px;position:relative}
+.kaia-inq label{display:flex;flex-direction:column;gap:2px;font-size:13px}
+.kaia-inq input:not([type=checkbox]),.kaia-inq textarea{border:1px solid #ccd;border-radius:6px;padding:6px 8px;font:inherit}
+.kaia-inq .kaia-consent{flex-direction:row;align-items:center;gap:6px}
+.kaia-inq button{border:0;background:#1f6f5c;color:#fff;border-radius:8px;padding:8px;cursor:pointer}
+.kaia-inq button:disabled{opacity:.5}
