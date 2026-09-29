@@ -10,6 +10,7 @@ function kaia_defaults() {
 		'model'           => 'claude-sonnet-5-5',
 		'company_name'    => '神清',
 		'post_type'       => 'post',
+		'category'        => 0,
 		'notify_email'    => get_option( 'admin_email' ),
 		'phone'           => '',
 		'reservation_url' => '',
@@ -41,6 +42,7 @@ function kaia_sanitize( $in ) {
 		'model'           => sanitize_text_field( $in['model'] ?? '' ),
 		'company_name'    => sanitize_text_field( $in['company_name'] ?? '' ),
 		'post_type'       => sanitize_key( $in['post_type'] ?? 'post' ),
+		'category'        => absint( $in['category'] ?? 0 ),
 		'notify_email'    => sanitize_email( $in['notify_email'] ?? '' ),
 		'phone'           => sanitize_text_field( $in['phone'] ?? '' ),
 		'reservation_url' => esc_url_raw( $in['reservation_url'] ?? '' ),
@@ -80,6 +82,17 @@ function kaia_render_settings() {
 						<?php endforeach; ?>
 					</select>
 					<p class="description">施工事例が入っている投稿タイプを選びます。</p></td></tr>
+				<tr><th>施工事例のカテゴリー</th><td>
+					<?php
+					wp_dropdown_categories( array(
+						'name'            => $f( 'category' ),
+						'selected'        => (int) $o['category'],
+						'show_option_all' => '(絞り込まない)',
+						'hide_empty'      => false,
+						'hierarchical'    => true,
+					) );
+					?>
+					<p class="description">施工事例が「投稿」の中にある場合、事例のカテゴリーを選びます。ブログやお知らせが事例として紹介されなくなります。</p></td></tr>
 				<tr><th>通知先メール</th><td><input type="email" class="regular-text" name="<?php echo esc_attr( $f( 'notify_email' ) ); ?>" value="<?php echo esc_attr( $o['notify_email'] ); ?>"></td></tr>
 				<tr><th>電話番号</th><td><input type="text" class="regular-text" name="<?php echo esc_attr( $f( 'phone' ) ); ?>" value="<?php echo esc_attr( $o['phone'] ); ?>"></td></tr>
 				<tr><th>現地調査の予約ページURL</th><td><input type="url" class="regular-text" name="<?php echo esc_attr( $f( 'reservation_url' ) ); ?>" value="<?php echo esc_attr( $o['reservation_url'] ); ?>"></td></tr>

@@ -5,24 +5,46 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * 施工事例をキーワード検索し、AIとカード表示の両方で使う形式で返す。
+ * タイトル・本文に加え、カテゴリー名・タグ名にもヒットさせる。
  */
 function kaia_search_cases( $keywords, $limit = 3 ) {
 	$post_type = kaia_get( 'post_type' );
+	$category  = (int) kaia_get( 'category' );
 	$terms     = preg_split( '/[\s、,,・]+/u', trim( (string) $keywords ), -1, PREG_SPLIT_NO_EMPTY );
 	$terms     = array_slice( $terms, 0, 5 );
 	$scores    = array();
 
+	$base = array(
+		'post_type'      => $post_type,
+		'post_status'    => 'publish',
+		'posts_per_page' => 10,
+		'fields'         => 'ids',
+		'no_found_rows'  => true,
+	);
+	if ( $category && 'post' === $post_type ) {
+		$base['cat'] = $category; // 子カテゴリーも含む
+	}
+
 	foreach ( $terms as $term ) {
-		$q = new WP_Query( array(
-			'post_type'      => $post_type,
-			'post_status'    => 'publish',
-			's'              => $term,
-			'posts_per_page' => 10,
-			'fields'         => 'ids',
-			'no_found_rows'  => true,
-		) );
+		// 1) タイトル・本文
+		$q = new WP_Query( $base + array( 's' => $term ) );
 		foreach ( $q->posts as $id ) {
 			$scores[ $id ] = ( $scores[ $id ] ?? 0 ) + 1;
+		}
+
+		// 2) カテゴリー名・タグ名
+		$taxes = array_intersect( array( 'category', 'post_tag' ), get_object_taxonomies( $post_type ) );
+		foreach ( $taxes as $tax ) {
+			$ids = get_terms( array( 'taxonomy' => $tax, 'name__like' => $term, 'fields' => 'ids', 'hide_empty' => true ) );
+			if ( is_wp_error( $ids ) || ! $ids ) {
+				continue;
+			}
+			$q = new WP_Query( $base + array(
+				'tax_query' => array( array( 'taxonomy' => $tax, 'field' => 'term_id', 'terms' => $ids ) ),
+			) );
+			foreach ( $q->posts as $id ) {
+				$scores[ $id ] = ( $scores[ $id ] ?? 0 ) + 1;
+			}
 		}
 	}
 
