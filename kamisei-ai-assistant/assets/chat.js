@@ -162,15 +162,25 @@
   }
 
   function startFlow() {
-    answers = []; kws = []; urgent = false; awaitFree = false;
+    answers = []; kws = []; urgent = false; awaitFree = false; form.style.display = '';
     askStep('start');
   }
 
   function askStep(id) {
     if (id === 'free') {
       awaitFree = true;
-      addMsg('最後に、ほかに気になること(場所・状況など)があればご記入ください。なければ「なし」を押してください。', 'ai');
-      askChips(['なし'], function () { finishFlow(''); });
+      form.style.display = 'none'; // 入力欄が2つに見えないよう、この質問の間は下の検索欄を隠す
+      addMsg('最後の質問です。ほかに気になること(場所・状況など)があれば、下の枠にご記入ください。なければそのまま進めます。', 'ai');
+      var box = el('div', 'kaia-free');
+      var ta = el('textarea'); ta.maxLength = 500; ta.rows = 3; ta.placeholder = '例: 2階の寝室の天井にシミがあります';
+      var go = el('button', 'kaia-free-go', 'この内容で進む'); go.type = 'button';
+      var skip = el('button', 'kaia-free-skip', '特になし・次へ進む'); skip.type = 'button';
+      function done(text) { box.remove(); chipsEl = null; finishFlow(text); }
+      go.addEventListener('click', function () { done(ta.value.trim()); });
+      skip.addEventListener('click', function () { done(''); });
+      box.appendChild(ta); box.appendChild(go); box.appendChild(skip);
+      chipsEl = box;
+      log.appendChild(box); scroll();
       return;
     }
     var step = KAIA.flow[id];
@@ -188,6 +198,7 @@
 
   function finishFlow(free) {
     awaitFree = false;
+    form.style.display = '';
     if (free) { addMsg(free, 'me'); answers.push('ほかに気になること: ' + free); }
     var summary = answers.join('\n');
     addMsg('ご相談内容を整理しました。\n\n' + summary, 'ai');
