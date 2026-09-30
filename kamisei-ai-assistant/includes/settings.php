@@ -17,15 +17,19 @@ function kaia_defaults() {
 		'phone'           => '',
 		'reservation_url' => '',
 		'privacy_url'     => '',
-		'greeting'        => 'こんにちは!屋根・雨漏り・外壁などのお困りごとをお聞かせください。',
+		'greeting'        => 'こんにちは!屋根・雨漏り・天窓・雨樋などのお困りごとをお聞かせください。',
 		'extra_prompt'    => '',
 		'rate_limit'      => 20,
-		'synonyms'        => "バルコニー,ベランダ,陸屋根,屋上\n雨漏り,雨漏れ,水漏れ\n瓦,屋根瓦,瓦屋根\nスカイライトチューブ,天窓,トップライト\n外壁,サイディング,モルタル\n防水,防水工事,防水塗装\n台風,強風,風災\nスレート,カラーベスト,コロニアル",
+		'synonyms'        => "バルコニー,ベランダ,陸屋根,屋上\n雨漏り,雨漏れ,水漏れ\n瓦,屋根瓦,瓦屋根\n天窓,トップライト\n雨樋,雨どい,雨とい,軒樋,竪樋\n外壁,サイディング,モルタル\n防水,防水工事,防水塗装\n台風,強風,風災\nスレート,カラーベスト,コロニアル",
 	);
 }
 
 function kaia_get( $key = null ) {
 	$opts = wp_parse_args( get_option( KAIA_OPTION, array() ), kaia_defaults() );
+	$old  = "バルコニー,ベランダ,陸屋根,屋上\n雨漏り,雨漏れ,水漏れ\n瓦,屋根瓦,瓦屋根\nスカイライトチューブ,天窓,トップライト\n外壁,サイディング,モルタル\n防水,防水工事,防水塗装\n台風,強風,風災\nスレート,カラーベスト,コロニアル";
+	if ( str_replace( "\r", '', (string) $opts['synonyms'] ) === $old ) {
+		$opts['synonyms'] = kaia_defaults()['synonyms']; // 旧初期値のままなら新しい初期値を使う
+	}
 	return null === $key ? $opts : ( $opts[ $key ] ?? null );
 }
 
