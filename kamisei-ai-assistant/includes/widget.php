@@ -21,3 +21,9 @@ add_action( 'wp_enqueue_scripts', function () {
 		'flow'        => kaia_flow(),
 	) );
 } );
+
+// Autoptimize などでまとめられると、設定値(KAIA)より先に読み込まれて動かなくなることがあるため除外する
+add_filter( 'autoptimize_filter_js_exclude', function ( $exclude ) {
+	$mine = 'kamisei-ai-assistant/assets/chat.js';
+	return is_array( $exclude ) ? array_merge( $exclude, array( $mine ) ) : trim( (string) $exclude . ', ' . $mine, ', ' );
+} );

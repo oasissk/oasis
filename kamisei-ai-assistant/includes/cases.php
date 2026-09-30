@@ -125,6 +125,13 @@ function kaia_search_posts( $input, array $cat_ids, $kind, $limit = 3, $unrestri
 		return array();
 	}
 
+	// 同じ検索は1時間キャッシュ(記事・タグ・設定が変わると番号が変わり自動で作り直す)
+	$ckey   = 'kaia_s_' . md5( wp_json_encode( array( $terms, $cat_ids, $kind, $limit, $unrestricted, kaia_get( 'post_type' ), kaia_cache_ver() ) ) );
+	$cached = get_transient( $ckey );
+	if ( is_array( $cached ) ) {
+		return $cached;
+	}
+
 	$post_type = kaia_get( 'post_type' );
 	$base      = array(
 		'post_type'      => $post_type,
@@ -142,10 +149,12 @@ function kaia_search_posts( $input, array $cat_ids, $kind, $limit = 3, $unrestri
 	$tbest  = array(); // タイトルに入っていた語の最大の重み
 
 	foreach ( $terms as $term => $w ) {
-		$q = new WP_Query( $base + array( 's' => $term ) ); // タイトル・本文・抜粋
-		foreach ( $q->posts as $id ) {
-			$scores[ $id ] = ( $scores[ $id ] ?? 0 ) + $w;
-			$best[ $id ]   = max( $best[ $id ] ?? 0, $w );
+		if ( $w >= 2 ) {                                      // タイトル・本文・抜粋(重みの低い言い換えは省略して軽くする)
+			$q = new WP_Query( $base + array( 's' => $term ) );
+			foreach ( $q->posts as $id ) {
+				$scores[ $id ] = ( $scores[ $id ] ?? 0 ) + $w;
+				$best[ $id ]   = max( $best[ $id ] ?? 0, $w );
+			}
 		}
 		if ( $taxes ) {                                       // タグ名・カテゴリー名
 			$ids = get_terms( array( 'taxonomy' => $taxes, 'name__like' => $term, 'fields' => 'ids', 'hide_empty' => true ) );
@@ -177,6 +186,7 @@ function kaia_search_posts( $input, array $cat_ids, $kind, $limit = 3, $unrestri
 	}
 
 	if ( ! $scores ) {
+		set_transient( $ckey, array(), HOUR_IN_SECONDS );
 		return array();
 	}
 	// 並べ方: ①タイトルに入っていた語の重み ②当たった語の重み ③点数
@@ -198,6 +208,7 @@ function kaia_search_posts( $input, array $cat_ids, $kind, $limit = 3, $unrestri
 			'image'   => (string) get_the_post_thumbnail_url( $id, 'medium' ),
 		);
 	}
+	set_transient( $ckey, $out, HOUR_IN_SECONDS );
 	return $out;
 }
 
@@ -249,4 +260,20 @@ function kaia_summary( $id ) {
 	$text = html_entity_decode( wp_strip_all_tags( $text ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 	$text = trim( preg_replace( '/[\s\x{00A0}\x{3000}]+/u', ' ', $text ) );
 	return wp_trim_words( $text, 60, '…' );
+}
+
+/** 検索キャッシュの番号。記事・タグ・設定が変わったら更新する。 */
+function kaia_cache_ver() {
+	return (int) get_option( 'kaia_cache_ver', 1 );
+}
+
+function kaia_bump_cache() {
+	static $done = false;
+	if ( ! $done ) {
+		$done = true;
+		update_option( 'kaia_cache_ver', kaia_cache_ver() + 1, false );
+	}
+}
+foreach ( array( 'save_post_post', 'deleted_post', 'trashed_post', 'set_object_terms', 'edited_term', 'created_term', 'delete_term', 'update_option_kaia_settings' ) as $kaia_hook ) {
+	add_action( $kaia_hook, 'kaia_bump_cache' );
 }

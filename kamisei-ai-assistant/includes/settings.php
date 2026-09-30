@@ -165,8 +165,10 @@ function kaia_render_search_test() {
 		}
 		echo '</ol>';
 	};
+	$t0       = microtime( true );
 	$cases    = kaia_search_cases( $terms, 5 );
 	$articles = kaia_search_articles( $terms, 5 );
+	echo '<p><strong>検索にかかった時間:</strong> ' . esc_html( number_format( microtime( true ) - $t0, 2 ) ) . ' 秒 <small>(2回目以降はキャッシュで速くなります。1回目が3秒を超える場合はご相談ください)</small></p>';
 	echo '<h3>チャットに表示される順番</h3>';
 	$ranked = kaia_rank_results( array_merge( $cases, $articles ) );
 	if ( $ranked ) {
