@@ -93,6 +93,7 @@ function kaia_rest_inquiry( WP_REST_Request $req ) {
 	}
 	$name    = mb_substr( sanitize_text_field( (string) $req->get_param( 'name' ) ), 0, 100 );
 	$contact = mb_substr( sanitize_text_field( (string) $req->get_param( 'contact' ) ), 0, 200 );
+	$address = mb_substr( sanitize_text_field( (string) $req->get_param( 'address' ) ), 0, 200 );
 	$message = mb_substr( sanitize_textarea_field( (string) $req->get_param( 'message' ) ), 0, 1000 );
 	if ( '' === $name || '' === $contact || ! $req->get_param( 'consent' ) ) {
 		return new WP_Error( 'kaia_bad', 'お名前・ご連絡先を入力し、同意にチェックを入れてください。', array( 'status' => 400 ) );
@@ -101,6 +102,6 @@ function kaia_rest_inquiry( WP_REST_Request $req ) {
 	if ( $page && wp_parse_url( $page, PHP_URL_HOST ) !== wp_parse_url( home_url(), PHP_URL_HOST ) ) {
 		$page = ''; // 自サイト以外のURLは記録しない
 	}
-	kaia_save_lead( $name, $contact, $message, '', $page );
+	kaia_save_lead( $name, $contact, $message, '', $page, $address );
 	return array( 'ok' => true );
 }

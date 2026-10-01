@@ -172,6 +172,7 @@
       '<p class="kaia-sub"></p>' +
       '<label><span>お名前<em class="kaia-req">必須</em></span><input name="name" required maxlength="100" autocomplete="name"></label>' +
       '<label><span>電話番号またはメール<em class="kaia-req">必須</em></span><input name="contact" required maxlength="200" autocomplete="tel"></label>' +
+      '<label><span>ご住所<em class="kaia-opt">任意</em></span><input name="address" maxlength="200" autocomplete="street-address" placeholder="例: 高浜市〇〇町(市町村までだけでも結構です)"></label>' +
       '<label><span>ご相談内容</span><textarea name="message" maxlength="1000"></textarea></label>' +
       '<input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">' +
       '<label class="kaia-consent"><input type="checkbox" name="consent"><span>個人情報の取り扱いに同意します</span></label>' +
@@ -188,7 +189,7 @@
       var d = new FormData(f), btn = f.querySelector('button');
       btn.disabled = true;
       post('inquiry', {
-        name: d.get('name'), contact: d.get('contact'), message: d.get('message'),
+        name: d.get('name'), contact: d.get('contact'), address: d.get('address'), message: d.get('message'),
         website: d.get('website'), consent: !!d.get('consent'), page: location.href
       }).then(function (res) {
         if (!res.ok) { btn.disabled = false; addMsg(res.j.message || 'エラーが発生しました。', 'ai'); return; }

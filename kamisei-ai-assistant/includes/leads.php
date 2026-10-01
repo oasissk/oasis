@@ -18,8 +18,8 @@ add_action( 'init', function () {
 /**
  * 問い合わせを保存し、担当者にメールする。
  */
-function kaia_save_lead( $name, $contact, $summary, $transcript = '', $page = '' ) {
-	$body = "お名前: {$name}\n連絡先: {$contact}\n受付日時: " . wp_date( 'Y年n月j日 H:i' ) . "\n";
+function kaia_save_lead( $name, $contact, $summary, $transcript = '', $page = '', $address = '' ) {
+	$body = "お名前: {$name}\n連絡先: {$contact}\nご住所: " . ( '' !== $address ? $address : '(未記入)' ) . "\n受付日時: " . wp_date( 'Y年n月j日 H:i' ) . "\n";
 	if ( $page ) {
 		$body .= "相談したページ: {$page}\n";
 	}

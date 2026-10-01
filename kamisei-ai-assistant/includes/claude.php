@@ -15,7 +15,7 @@ function kaia_system_prompt() {
 		. "1. 次の順で、必ず1回に1問だけ聞く: ①お困りごと(雨漏り・天窓からの雨漏り・雨樋・台風被害・屋根や外壁の劣化など)②具体的な症状といつからか ③屋根の種類(瓦・スレート・金属)④築年数 ⑤ご希望の時期。答えやすいよう、毎回2〜4個の選択肢の例を添える。今まさに雨漏りしている場合は、屋根に登らないよう伝え、お急ぎなら電話をすすめる。\n"
 		. "2. 症状と築年数が分かったら search_cases ツールで近い施工事例を探し、紹介する。事例は画面にカード表示されるので、本文でURLを繰り返さなくてよい。\n"
 		. "   補足として、お悩みに関する解説記事があれば search_articles ツールで探し、「こちらの記事も参考になります」と1〜2件添える(事例の代わりにはしない)。\n"
-		. "3. お客様が相談・現地調査を希望したら、お名前と連絡先(電話かメール)を尋ね、個人情報の取り扱いに同意を得たうえで request_handoff ツールを呼ぶ。\n\n"
+		. "3. お客様が相談・現地調査を希望したら、お名前と連絡先(電話かメール)、差し支えなければご住所(任意。市町村まででも可)を尋ね、個人情報の取り扱いに同意を得たうえで request_handoff ツールを呼ぶ。\n\n"
 		. "守ること:\n"
 		. "- 返答は短く、やさしい日本語で。\n"
 		. "- 金額は断定しない。事例に書かれた金額があっても「あくまで目安で、現地調査後に確定します」と添える。\n"
@@ -61,6 +61,7 @@ function kaia_tools() {
 				'properties' => array(
 					'name'    => array( 'type' => 'string' ),
 					'contact' => array( 'type' => 'string', 'description' => '電話番号またはメールアドレス' ),
+					'address' => array( 'type' => 'string', 'description' => 'ご住所(任意。聞けた範囲で。市町村までなど一部でもよい)' ),
 					'summary' => array( 'type' => 'string', 'description' => '要望のまとめ(場所・築年数・困りごと・予算感など)' ),
 					'consent' => array( 'type' => 'boolean', 'description' => '個人情報の取り扱いに同意したか' ),
 				),
@@ -146,7 +147,9 @@ function kaia_chat( array $messages ) {
 						sanitize_text_field( $in['name'] ),
 						sanitize_text_field( $in['contact'] ),
 						sanitize_textarea_field( $in['summary'] ?? '' ),
-						kaia_transcript( $messages )
+						kaia_transcript( $messages ),
+						'',
+						mb_substr( sanitize_text_field( $in['address'] ?? '' ), 0, 200 )
 					);
 					$handoff = true;
 					$out     = '担当者に引き継ぎました。';
