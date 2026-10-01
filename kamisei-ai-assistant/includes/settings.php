@@ -26,6 +26,7 @@ function kaia_defaults() {
 		'pc_bottom'       => 16,
 		'sp_side'         => 'left',
 		'sp_bottom'       => 110,
+		'sp_open_bottom'  => 24,
 		'synonyms'        => "バルコニー,ベランダ,陸屋根,屋上\n雨漏り,雨漏れ,水漏れ\n瓦,屋根瓦,瓦屋根\n天窓,トップライト\n雨樋,雨どい,雨とい,軒樋,竪樋\n外壁,サイディング,モルタル\n防水,防水工事,防水塗装\n台風,強風,風災\nスレート,カラーベスト,コロニアル",
 	);
 }
@@ -83,6 +84,7 @@ function kaia_sanitize( $in ) {
 		'pc_bottom'       => min( 600, max( 0, (int) ( $in['pc_bottom'] ?? 16 ) ) ),
 		'sp_side'         => 'right' === ( $in['sp_side'] ?? '' ) ? 'right' : 'left',
 		'sp_bottom'       => min( 600, max( 0, (int) ( $in['sp_bottom'] ?? 110 ) ) ),
+		'sp_open_bottom'  => min( 400, max( 0, (int) ( $in['sp_open_bottom'] ?? 24 ) ) ),
 		'synonyms'        => sanitize_textarea_field( $in['synonyms'] ?? '' ),
 	);
 	return $out;
@@ -158,6 +160,9 @@ function kaia_render_settings() {
 					<select name="<?php echo esc_attr( $f( 'sp_side' ) ); ?>"><option value="left" <?php selected( $o['sp_side'], 'left' ); ?>>左下</option><option value="right" <?php selected( $o['sp_side'], 'right' ); ?>>右下</option></select>
 					下から <input type="number" min="0" max="600" style="width:6em" name="<?php echo esc_attr( $f( 'sp_bottom' ) ); ?>" value="<?php echo esc_attr( $o['sp_bottom'] ); ?>"> px
 					<p class="description">サイトの固定ボタン(電話・LINEなど)やブラウザの下のバーと重ならない位置に調整します。数字を大きくすると上に、小さくすると下に動きます。</p></td></tr>
+				<tr><th>開いたときの下端(スマホ)</th><td>
+					下から <input type="number" min="0" max="400" style="width:6em" name="<?php echo esc_attr( $f( 'sp_open_bottom' ) ); ?>" value="<?php echo esc_attr( $o['sp_open_bottom'] ); ?>"> px
+					<p class="description">チャットを開いたときの画面の下端です。入力欄がブラウザの下のバーに隠れる場合は、数字を大きくしてください。</p></td></tr>
 				<tr><th>1時間あたりの上限(1人)</th><td><input type="number" min="1" name="<?php echo esc_attr( $f( 'rate_limit' ) ); ?>" value="<?php echo esc_attr( $o['rate_limit'] ); ?>"> 回<p class="description">API利用料の暴走を防ぎます。</p></td></tr>
 			</table>
 			<?php submit_button(); ?>

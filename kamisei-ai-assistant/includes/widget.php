@@ -13,8 +13,8 @@ add_action( 'wp_enqueue_scripts', function () {
 	$sp_r = 'right' === kaia_get( 'sp_side' ) ? '12px' : 'auto';
 	$sp_l = 'right' === kaia_get( 'sp_side' ) ? 'auto' : '12px';
 	wp_add_inline_style( 'kaia', sprintf(
-		'#kaia-root{--pc-side-r:%s;--pc-side-l:%s;--pc-bottom:%dpx;--sp-side-r:%s;--sp-side-l:%s;--sp-bottom:%dpx}',
-		$pc_r, $pc_l, (int) kaia_get( 'pc_bottom' ), $sp_r, $sp_l, (int) kaia_get( 'sp_bottom' )
+		'#kaia-root{--pc-side-r:%s;--pc-side-l:%s;--pc-bottom:%dpx;--sp-side-r:%s;--sp-side-l:%s;--sp-bottom:%dpx;--sp-open-bottom:%dpx}',
+		$pc_r, $pc_l, (int) kaia_get( 'pc_bottom' ), $sp_r, $sp_l, (int) kaia_get( 'sp_bottom' ), (int) kaia_get( 'sp_open_bottom' )
 	) );
 	// ページ先頭で読み込む(テーマによってはスマホ表示で wp_footer が無く、末尾読み込みだと表示されないため)
 	wp_enqueue_script( 'kaia', KAIA_URL . 'assets/chat.js', array(), KAIA_VERSION, false );
