@@ -16,7 +16,8 @@ add_action( 'wp_enqueue_scripts', function () {
 		'#kaia-root{--pc-side-r:%s;--pc-side-l:%s;--pc-bottom:%dpx;--sp-side-r:%s;--sp-side-l:%s;--sp-bottom:%dpx}',
 		$pc_r, $pc_l, (int) kaia_get( 'pc_bottom' ), $sp_r, $sp_l, (int) kaia_get( 'sp_bottom' )
 	) );
-	wp_enqueue_script( 'kaia', KAIA_URL . 'assets/chat.js', array(), KAIA_VERSION, true );
+	// ページ先頭で読み込む(テーマによってはスマホ表示で wp_footer が無く、末尾読み込みだと表示されないため)
+	wp_enqueue_script( 'kaia', KAIA_URL . 'assets/chat.js', array(), KAIA_VERSION, false );
 	wp_localize_script( 'kaia', 'KAIA', array(
 		'mode'        => kaia_api_key() ? 'ai' : 'search',
 		'endpoint'    => esc_url_raw( rest_url( 'kaia/v1/' ) ),

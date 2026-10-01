@@ -1,5 +1,7 @@
 (function () {
-  if (typeof KAIA === 'undefined') return;
+  if (typeof KAIA === 'undefined' || window.__kaiaLoaded) return;
+  if (!document.body) { document.addEventListener('DOMContentLoaded', arguments.callee); return; } // ページ先頭で読み込まれた場合は本文の準備を待つ
+  window.__kaiaLoaded = true;
 
   var AI = KAIA.mode === 'ai';
   var STORE = 'kaia_history';
