@@ -30,7 +30,21 @@ function kaia_save_lead( $name, $contact, $summary, $transcript ) {
 
 	$to = kaia_parse_emails( kaia_get( 'notify_email' ) );
 	if ( $to ) {
-		wp_mail( $to, '[AIチャット] ' . $name . ' 様から相談がありました', $body );
+		$subject = str_replace( '{name}', $name, (string) kaia_get( 'mail_subject' ) );
+		$headers = array();
+		if ( is_email( $contact ) ) {
+			$headers[] = 'Reply-To: ' . $name . ' <' . $contact . '>'; // 返信するとお客様宛てになる
+		}
+		// 差出人名だけ変える(アドレスはサーバーの既定のまま。迷惑メール判定を避けるため)
+		$from_name = function () {
+			return (string) kaia_get( 'mail_from_name' );
+		};
+		add_filter( 'wp_mail_from_name', $from_name, 99 );
+		try {
+			wp_mail( $to, $subject, $body, $headers );
+		} finally {
+			remove_filter( 'wp_mail_from_name', $from_name, 99 ); // ほかのメール(Contact Form 7 など)には影響させない
+		}
 	}
 	return $id;
 }

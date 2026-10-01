@@ -14,6 +14,8 @@ function kaia_defaults() {
 		'category'        => 0,
 		'article_cats'    => array(),
 		'notify_email'    => get_option( 'admin_email' ),
+		'mail_from_name'  => 'カミセイAIアシスタントフォーム',
+		'mail_subject'    => '【カミセイAIアシスタントフォーム】{name}様からご相談がありました',
 		'phone'           => '',
 		'reservation_url' => '',
 		'privacy_url'     => '',
@@ -65,6 +67,8 @@ function kaia_sanitize( $in ) {
 		'category'        => absint( $in['category'] ?? 0 ),
 		'article_cats'    => array_values( array_filter( array_map( 'absint', (array) ( $in['article_cats'] ?? array() ) ) ) ),
 		'notify_email'    => implode( ', ', kaia_parse_emails( $in['notify_email'] ?? '' ) ),
+		'mail_from_name'  => sanitize_text_field( $in['mail_from_name'] ?? '' ) ?: kaia_defaults()['mail_from_name'],
+		'mail_subject'    => sanitize_text_field( $in['mail_subject'] ?? '' ) ?: kaia_defaults()['mail_subject'],
 		'phone'           => sanitize_text_field( $in['phone'] ?? '' ),
 		'reservation_url' => esc_url_raw( $in['reservation_url'] ?? '' ),
 		'privacy_url'     => esc_url_raw( $in['privacy_url'] ?? '' ),
@@ -128,6 +132,9 @@ function kaia_render_settings() {
 					<p class="description">お悩みに関係する解説記事(リフォーム解説、お客様の声など)のカテゴリー。事例の補足として紹介されます。ブログやお知らせは選ばないでください。</p></td></tr>
 				<tr><th>通知先メール</th><td><input type="text" class="large-text" name="<?php echo esc_attr( $f( 'notify_email' ) ); ?>" value="<?php echo esc_attr( $o['notify_email'] ); ?>" placeholder="例: info@example.com, staff@example.com">
 					<p class="description">複数のアドレスに送る場合は、カンマ(,)で区切って入力します。正しくないアドレスは保存時に取り除かれます。</p></td></tr>
+				<tr><th>通知メールの差出人名</th><td><input type="text" class="regular-text" name="<?php echo esc_attr( $f( 'mail_from_name' ) ); ?>" value="<?php echo esc_attr( $o['mail_from_name'] ); ?>"></td></tr>
+				<tr><th>通知メールの件名</th><td><input type="text" class="large-text" name="<?php echo esc_attr( $f( 'mail_subject' ) ); ?>" value="<?php echo esc_attr( $o['mail_subject'] ); ?>">
+					<p class="description"><code>{name}</code> はお客様のお名前に置き換わります。</p></td></tr>
 				<tr><th>電話番号</th><td><input type="text" class="regular-text" name="<?php echo esc_attr( $f( 'phone' ) ); ?>" value="<?php echo esc_attr( $o['phone'] ); ?>"></td></tr>
 				<tr><th>現地調査の予約ページURL</th><td><input type="url" class="regular-text" name="<?php echo esc_attr( $f( 'reservation_url' ) ); ?>" value="<?php echo esc_attr( $o['reservation_url'] ); ?>"></td></tr>
 				<tr><th>プライバシーポリシーURL</th><td><input type="url" class="regular-text" name="<?php echo esc_attr( $f( 'privacy_url' ) ); ?>" value="<?php echo esc_attr( $o['privacy_url'] ); ?>"></td></tr>
