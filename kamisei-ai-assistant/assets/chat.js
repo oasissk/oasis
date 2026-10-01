@@ -10,7 +10,9 @@
     var fab = root && root.querySelector('.kaia-fab');
     lines.push('chat.js: 読み込み済み');
     lines.push('設定(KAIA): ' + (typeof KAIA === 'undefined' ? 'なし ← 設定値が読み込まれていません' : 'あり / モード=' + KAIA.mode));
-    lines.push('チャット本体: ' + (root ? 'あり' : 'なし ← 作られていません'));
+    lines.push('チャット本体: ' + (root ? 'あり' : 'なし') + ' / 作成=' + (window.__kaiaState || 'まだ') + ' / 消されて戻した回数=' + (window.__kaiaReattached || 0) + ' / 二重読み込み防止=' + (window.__kaiaLoaded ? 'あり' : 'なし'));
+    if (root) lines.push('置き場所: ' + (root.parentNode ? root.parentNode.tagName.toLowerCase() : 'なし'));
+    lines.push('chat.jsの読み込み数: ' + document.querySelectorAll('script[src*="kamisei-ai-assistant/assets/chat.js"]').length + ' / 版: ' + ((document.querySelector('script[src*="kamisei-ai-assistant/assets/chat.js"]') || {}).src || '').split('ver=')[1]);
     if (fab) {
       var r = fab.getBoundingClientRect(), cs = getComputedStyle(root), fcs = getComputedStyle(fab);
       lines.push('ボタン位置: x=' + Math.round(r.left) + ' y=' + Math.round(r.top) + ' 幅=' + Math.round(r.width) + ' 高さ=' + Math.round(r.height) + ' / 画面 ' + innerWidth + '×' + innerHeight);
@@ -68,6 +70,19 @@
     '<form class="kaia-form"><textarea maxlength="1000"></textarea><button type="submit"></button></form>' +
     '</div>';
   document.body.appendChild(root);
+  window.__kaiaState = 'created';
+  window.__kaiaReattached = 0;
+  // テーマのスマホ用メニューなどがページを組み替えてチャットを消してしまう場合に備え、消えたら同じものを戻す
+  function guard() {
+    if (!document.documentElement.contains(root)) {
+      (document.body || document.documentElement).appendChild(root);
+      window.__kaiaReattached++;
+    }
+  }
+  if (window.MutationObserver) {
+    new MutationObserver(guard).observe(document.documentElement, { childList: true, subtree: true });
+  }
+  setInterval(guard, 1500);
 
   var log = root.querySelector('.kaia-log');
   var form = root.querySelector('.kaia-form');
