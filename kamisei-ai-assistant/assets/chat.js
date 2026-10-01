@@ -10,7 +10,7 @@
     var fab = root && root.querySelector('.kaia-fab');
     lines.push('chat.js: 読み込み済み');
     lines.push('設定(KAIA): ' + (typeof KAIA === 'undefined' ? 'なし ← 設定値が読み込まれていません' : 'あり / モード=' + KAIA.mode));
-    lines.push('チャット本体: ' + (root ? 'あり' : 'なし') + ' / 作成=' + (window.__kaiaState || 'まだ') + ' / 消されて戻した回数=' + (window.__kaiaReattached || 0) + ' / 二重読み込み防止=' + (window.__kaiaLoaded ? 'あり' : 'なし'));
+    lines.push('チャット本体: ' + (root ? 'あり' : 'なし') + ' / 作成=' + (window.__kaiaState || 'まだ') + ' / 消されて戻した回数=' + (window.__kaiaReattached || 0) + ' / 二重読み込み防止=' + (window.__kaiaLoaded ? 'あり' : 'なし') + ' / 設定待ち=' + ((window.__kaiaWait || 0) * 0.1).toFixed(1) + '秒');
     if (root) lines.push('置き場所: ' + (root.parentNode ? root.parentNode.tagName.toLowerCase() : 'なし'));
     lines.push('chat.jsの読み込み数: ' + document.querySelectorAll('script[src*="kamisei-ai-assistant/assets/chat.js"]').length + ' / 版: ' + ((document.querySelector('script[src*="kamisei-ai-assistant/assets/chat.js"]') || {}).src || '').split('ver=')[1]);
     if (fab) {
@@ -34,9 +34,16 @@
   if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
 })();
 
-(function () {
-  if (typeof KAIA === 'undefined' || window.__kaiaLoaded) return;
-  if (!document.body) { document.addEventListener('DOMContentLoaded', arguments.callee); return; } // ページ先頭で読み込まれた場合は本文の準備を待つ
+(function boot(tries) {
+  tries = tries || 0;
+  if (window.__kaiaLoaded) return;
+  // 設定値(KAIA)やページ本文がまだ無いときは、そろうまで待つ。
+  // 高速化プラグインなどで設定値の読み込みが後回しにされる環境(スマホで確認)に対応。最大20秒。
+  if (typeof KAIA === 'undefined' || !document.body) {
+    window.__kaiaWait = tries;
+    if (tries < 200) setTimeout(function () { boot(tries + 1); }, 100);
+    return;
+  }
   window.__kaiaLoaded = true;
 
   var AI = KAIA.mode === 'ai';
