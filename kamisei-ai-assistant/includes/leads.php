@@ -28,7 +28,7 @@ function kaia_save_lead( $name, $contact, $summary, $transcript ) {
 		'post_content' => $body,
 	) );
 
-	$to = kaia_get( 'notify_email' );
+	$to = kaia_parse_emails( kaia_get( 'notify_email' ) );
 	if ( $to ) {
 		wp_mail( $to, '[AIチャット] ' . $name . ' 様から相談がありました', $body );
 	}

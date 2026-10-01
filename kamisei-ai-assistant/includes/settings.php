@@ -41,6 +41,18 @@ add_action( 'admin_init', function () {
 	register_setting( 'kaia', KAIA_OPTION, array( 'sanitize_callback' => 'kaia_sanitize' ) );
 } );
 
+/** カンマ・読点・空白・改行で区切られたメールアドレスを、正しいものだけの配列にする。 */
+function kaia_parse_emails( $raw ) {
+	$out = array();
+	foreach ( preg_split( '/[\s,、，;]+/u', (string) $raw, -1, PREG_SPLIT_NO_EMPTY ) as $e ) {
+		$e = sanitize_email( $e );
+		if ( $e && is_email( $e ) && ! in_array( $e, $out, true ) ) {
+			$out[] = $e;
+		}
+	}
+	return $out;
+}
+
 function kaia_sanitize( $in ) {
 	$old = kaia_get();
 	$out = array(
@@ -52,7 +64,7 @@ function kaia_sanitize( $in ) {
 		'post_type'       => sanitize_key( $in['post_type'] ?? 'post' ),
 		'category'        => absint( $in['category'] ?? 0 ),
 		'article_cats'    => array_values( array_filter( array_map( 'absint', (array) ( $in['article_cats'] ?? array() ) ) ) ),
-		'notify_email'    => sanitize_email( $in['notify_email'] ?? '' ),
+		'notify_email'    => implode( ', ', kaia_parse_emails( $in['notify_email'] ?? '' ) ),
 		'phone'           => sanitize_text_field( $in['phone'] ?? '' ),
 		'reservation_url' => esc_url_raw( $in['reservation_url'] ?? '' ),
 		'privacy_url'     => esc_url_raw( $in['privacy_url'] ?? '' ),
@@ -114,7 +126,8 @@ function kaia_render_settings() {
 						<label style="display:inline-block;margin:0 16px 4px 0"><input type="checkbox" name="<?php echo esc_attr( $f( 'article_cats' ) ); ?>[]" value="<?php echo esc_attr( $c->term_id ); ?>" <?php checked( in_array( $c->term_id, (array) $o['article_cats'], true ) ); ?>> <?php echo esc_html( $c->name ); ?> (<?php echo (int) $c->count; ?>)</label>
 					<?php endforeach; ?>
 					<p class="description">お悩みに関係する解説記事(リフォーム解説、お客様の声など)のカテゴリー。事例の補足として紹介されます。ブログやお知らせは選ばないでください。</p></td></tr>
-				<tr><th>通知先メール</th><td><input type="email" class="regular-text" name="<?php echo esc_attr( $f( 'notify_email' ) ); ?>" value="<?php echo esc_attr( $o['notify_email'] ); ?>"></td></tr>
+				<tr><th>通知先メール</th><td><input type="text" class="large-text" name="<?php echo esc_attr( $f( 'notify_email' ) ); ?>" value="<?php echo esc_attr( $o['notify_email'] ); ?>" placeholder="例: info@example.com, staff@example.com">
+					<p class="description">複数のアドレスに送る場合は、カンマ(,)で区切って入力します。正しくないアドレスは保存時に取り除かれます。</p></td></tr>
 				<tr><th>電話番号</th><td><input type="text" class="regular-text" name="<?php echo esc_attr( $f( 'phone' ) ); ?>" value="<?php echo esc_attr( $o['phone'] ); ?>"></td></tr>
 				<tr><th>現地調査の予約ページURL</th><td><input type="url" class="regular-text" name="<?php echo esc_attr( $f( 'reservation_url' ) ); ?>" value="<?php echo esc_attr( $o['reservation_url'] ); ?>"></td></tr>
 				<tr><th>プライバシーポリシーURL</th><td><input type="url" class="regular-text" name="<?php echo esc_attr( $f( 'privacy_url' ) ); ?>" value="<?php echo esc_attr( $o['privacy_url'] ); ?>"></td></tr>
