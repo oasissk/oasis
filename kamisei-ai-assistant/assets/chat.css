@@ -1,4 +1,4 @@
-#kaia-root{--navy:#12305f;--navy-2:#1d4a8a;--navy-3:#e8eef8;--accent:#f5a623;--ink:#1c2433;--pc-side-r:16px;--pc-side-l:auto;--pc-bottom:16px;--sp-side-r:auto;--sp-side-l:12px;--sp-bottom:110px;position:fixed;right:var(--pc-side-r);left:var(--pc-side-l);bottom:var(--pc-bottom);z-index:2147483000;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.65;color:var(--ink)}
+#kaia-root{--navy:#12305f;--navy-2:#1d4a8a;--navy-3:#e8eef8;--accent:#f5a623;--ink:#1c2433;--pc-side-r:16px;--pc-side-l:auto;--pc-bottom:16px;--sp-side-r:auto;--sp-side-l:12px;--sp-bottom:110px;position:fixed;-webkit-transform:translate3d(0,0,10000px);transform:translate3d(0,0,10000px);right:var(--pc-side-r);left:var(--pc-side-l);bottom:var(--pc-bottom);z-index:2147483000;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.65;color:var(--ink)}
 #kaia-root *{box-sizing:border-box}
 #kaia-root svg{display:block}
 

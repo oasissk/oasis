@@ -1,3 +1,37 @@
+// ---- 診断表示(URLに ?kaia_debug=1 を付けたときだけ。画面上部に状態を表示する)
+(function () {
+  if (!/[?&]kaia_debug=1/.test(location.search) || window.__kaiaDebug) return;
+  window.__kaiaDebug = true;
+  var errs = [];
+  window.addEventListener('error', function (e) { errs.push((e.message || 'error') + ' @' + (e.filename || '').split('/').pop() + ':' + (e.lineno || '')); });
+  function show() {
+    var lines = [];
+    var root = document.getElementById('kaia-root');
+    var fab = root && root.querySelector('.kaia-fab');
+    lines.push('chat.js: 読み込み済み');
+    lines.push('設定(KAIA): ' + (typeof KAIA === 'undefined' ? 'なし ← 設定値が読み込まれていません' : 'あり / モード=' + KAIA.mode));
+    lines.push('チャット本体: ' + (root ? 'あり' : 'なし ← 作られていません'));
+    if (fab) {
+      var r = fab.getBoundingClientRect(), cs = getComputedStyle(root), fcs = getComputedStyle(fab);
+      lines.push('ボタン位置: x=' + Math.round(r.left) + ' y=' + Math.round(r.top) + ' 幅=' + Math.round(r.width) + ' 高さ=' + Math.round(r.height) + ' / 画面 ' + innerWidth + '×' + innerHeight);
+      lines.push('表示: position=' + cs.position + ' display=' + fcs.display + ' visibility=' + fcs.visibility + ' opacity=' + fcs.opacity + ' z=' + cs.zIndex);
+      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var top = document.elementFromPoint(cx, cy);
+      if (!top) lines.push('ボタン中央: 画面外');
+      else if (root.contains(top)) lines.push('ボタン中央: チャットのボタンが一番手前(OK)');
+      else lines.push('ボタン中央を覆っている要素: <' + top.tagName.toLowerCase() + (top.id ? ' id=' + top.id : '') + (top.className && typeof top.className === 'string' ? ' class=' + top.className.slice(0, 60) : '') + '>');
+    }
+    lines.push('エラー: ' + (errs.length ? errs.slice(0, 3).join(' / ') : 'なし'));
+    lines.push('端末: ' + navigator.userAgent.slice(0, 120));
+    var box = document.createElement('div');
+    box.setAttribute('style', 'position:relative;z-index:2147483647;background:#fff3cd;color:#000;border:3px solid #d00;padding:8px;font:12px/1.5 monospace;white-space:pre-wrap;word-break:break-all');
+    box.textContent = '[AIアシスタント診断]\n' + lines.join('\n');
+    document.body.insertBefore(box, document.body.firstChild);
+  }
+  function later() { setTimeout(show, 1500); }
+  if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
+})();
+
 (function () {
   if (typeof KAIA === 'undefined' || window.__kaiaLoaded) return;
   if (!document.body) { document.addEventListener('DOMContentLoaded', arguments.callee); return; } // ページ先頭で読み込まれた場合は本文の準備を待つ
