@@ -112,6 +112,9 @@
   }
 
   function scroll() { log.scrollTop = log.scrollHeight; }
+  // スマホ・タブレットでは自動でカーソルを当てない(キーボードが勝手に出て画面が押し上げられるため)
+  var TOUCH = (window.matchMedia && matchMedia('(hover: none), (pointer: coarse)').matches) || ('ontouchstart' in window);
+  function focusInput() { if (!TOUCH) input.focus(); }
   function el(tag, cls, text) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -209,7 +212,7 @@
       else { addMsg('「' + kw + '」に近い事例は見つかりませんでした。別の言葉でお試しいただくか、ご相談ください。', 'ai'); }
       addActions(true);
     }).catch(function () { wait.remove(); addMsg('通信エラーが発生しました。', 'ai'); })
-      .finally(function () { send.disabled = false; input.focus(); });
+      .finally(function () { send.disabled = false; focusInput(); });
   }
 
 
@@ -299,7 +302,7 @@
       if (res.j.handoff) addMsg('担当者に内容をお送りしました。折り返しをお待ちください。', 'ai');
       try { sessionStorage.setItem(STORE, JSON.stringify(history.slice(-20))); } catch (e) {}
     }).catch(function () { wait.remove(); addMsg('通信エラーが発生しました。', 'ai'); addActions(false); })
-      .finally(function () { send.disabled = false; input.focus(); });
+      .finally(function () { send.disabled = false; focusInput(); });
   }
 
   // ---- 初期表示
@@ -310,7 +313,7 @@
     if (!AI) startFlow();
   }
 
-  root.querySelector('.kaia-fab').addEventListener('click', function () { root.classList.add('open'); input.focus(); scroll(); });
+  root.querySelector('.kaia-fab').addEventListener('click', function () { root.classList.add('open'); focusInput(); scroll(); });
   root.querySelector('.kaia-close').addEventListener('click', function () { root.classList.remove('open'); });
 
   form.addEventListener('submit', function (e) {
