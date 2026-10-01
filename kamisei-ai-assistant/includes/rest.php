@@ -97,6 +97,10 @@ function kaia_rest_inquiry( WP_REST_Request $req ) {
 	if ( '' === $name || '' === $contact || ! $req->get_param( 'consent' ) ) {
 		return new WP_Error( 'kaia_bad', 'お名前・ご連絡先を入力し、同意にチェックを入れてください。', array( 'status' => 400 ) );
 	}
-	kaia_save_lead( $name, $contact, $message, '(検索のみモードの問い合わせフォームから)' );
+	$page = esc_url_raw( (string) $req->get_param( 'page' ) );
+	if ( $page && wp_parse_url( $page, PHP_URL_HOST ) !== wp_parse_url( home_url(), PHP_URL_HOST ) ) {
+		$page = ''; // 自サイト以外のURLは記録しない
+	}
+	kaia_save_lead( $name, $contact, $message, '', $page );
 	return array( 'ok' => true );
 }

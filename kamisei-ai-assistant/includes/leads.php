@@ -18,8 +18,15 @@ add_action( 'init', function () {
 /**
  * 問い合わせを保存し、担当者にメールする。
  */
-function kaia_save_lead( $name, $contact, $summary, $transcript ) {
-	$body = "お名前: {$name}\n連絡先: {$contact}\n\n■ 要望のまとめ\n{$summary}\n\n■ 会話ログ\n{$transcript}";
+function kaia_save_lead( $name, $contact, $summary, $transcript = '', $page = '' ) {
+	$body = "お名前: {$name}\n連絡先: {$contact}\n受付日時: " . wp_date( 'Y年n月j日 H:i' ) . "\n";
+	if ( $page ) {
+		$body .= "相談したページ: {$page}\n";
+	}
+	$body .= "\n■ ご相談内容\n{$summary}\n";
+	if ( '' !== trim( (string) $transcript ) ) {
+		$body .= "\n■ AIとの会話の記録\n{$transcript}\n"; // AIチャット版のときだけ
+	}
 
 	$id = wp_insert_post( array(
 		'post_type'    => 'kaia_lead',

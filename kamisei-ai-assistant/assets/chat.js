@@ -128,7 +128,7 @@
       btn.disabled = true;
       post('inquiry', {
         name: d.get('name'), contact: d.get('contact'), message: d.get('message'),
-        website: d.get('website'), consent: !!d.get('consent')
+        website: d.get('website'), consent: !!d.get('consent'), page: location.href
       }).then(function (res) {
         if (!res.ok) { btn.disabled = false; addMsg(res.j.message || 'エラーが発生しました。', 'ai'); return; }
         f.remove(); addMsg('送信しました。担当者より折り返しご連絡します。', 'ai');
@@ -219,7 +219,7 @@
       else { addMsg('ぴったりの事例は見つかりませんでした。担当者がお話をうかがいます。', 'ai'); }
     }).catch(function () { wait.remove(); })
       .finally(function () {
-        addActions(true, 'ご相談内容(チャットで選択):\n' + summary);
+        addActions(true, summary);
         var again = el('div', 'kaia-actions');
         var b = el('button', '', '最初からやり直す'); b.type = 'button';
         b.addEventListener('click', function () { again.remove(); startFlow(); });
