@@ -157,7 +157,7 @@ function kaia_render_settings() {
 				<tr><th>ボタンの位置(スマホ)</th><td>
 					<select name="<?php echo esc_attr( $f( 'sp_side' ) ); ?>"><option value="left" <?php selected( $o['sp_side'], 'left' ); ?>>左下</option><option value="right" <?php selected( $o['sp_side'], 'right' ); ?>>右下</option></select>
 					下から <input type="number" min="0" max="600" style="width:6em" name="<?php echo esc_attr( $f( 'sp_bottom' ) ); ?>" value="<?php echo esc_attr( $o['sp_bottom'] ); ?>"> px
-					<p class="description">サイトの固定ボタン(電話・LINEなど)やブラウザの下のバーと重なって見えない場合は、反対側にするか、数字を大きくして上に動かしてください。</p></td></tr>
+					<p class="description">サイトの固定ボタン(電話・LINEなど)やブラウザの下のバーと重ならない位置に調整します。数字を大きくすると上に、小さくすると下に動きます。</p></td></tr>
 				<tr><th>1時間あたりの上限(1人)</th><td><input type="number" min="1" name="<?php echo esc_attr( $f( 'rate_limit' ) ); ?>" value="<?php echo esc_attr( $o['rate_limit'] ); ?>"> 回<p class="description">API利用料の暴走を防ぎます。</p></td></tr>
 			</table>
 			<?php submit_button(); ?>
