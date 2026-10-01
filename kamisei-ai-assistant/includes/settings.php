@@ -22,6 +22,10 @@ function kaia_defaults() {
 		'greeting'        => 'こんにちは!屋根・雨漏り・天窓・雨樋などのお困りごとをお聞かせください。',
 		'extra_prompt'    => '',
 		'rate_limit'      => 20,
+		'pc_side'         => 'right',
+		'pc_bottom'       => 16,
+		'sp_side'         => 'left',
+		'sp_bottom'       => 110,
 		'synonyms'        => "バルコニー,ベランダ,陸屋根,屋上\n雨漏り,雨漏れ,水漏れ\n瓦,屋根瓦,瓦屋根\n天窓,トップライト\n雨樋,雨どい,雨とい,軒樋,竪樋\n外壁,サイディング,モルタル\n防水,防水工事,防水塗装\n台風,強風,風災\nスレート,カラーベスト,コロニアル",
 	);
 }
@@ -75,6 +79,10 @@ function kaia_sanitize( $in ) {
 		'greeting'        => sanitize_text_field( $in['greeting'] ?? '' ),
 		'extra_prompt'    => sanitize_textarea_field( $in['extra_prompt'] ?? '' ),
 		'rate_limit'      => max( 1, (int) ( $in['rate_limit'] ?? 20 ) ),
+		'pc_side'         => 'left' === ( $in['pc_side'] ?? '' ) ? 'left' : 'right',
+		'pc_bottom'       => min( 600, max( 0, (int) ( $in['pc_bottom'] ?? 16 ) ) ),
+		'sp_side'         => 'right' === ( $in['sp_side'] ?? '' ) ? 'right' : 'left',
+		'sp_bottom'       => min( 600, max( 0, (int) ( $in['sp_bottom'] ?? 110 ) ) ),
 		'synonyms'        => sanitize_textarea_field( $in['synonyms'] ?? '' ),
 	);
 	return $out;
@@ -143,6 +151,13 @@ function kaia_render_settings() {
 					<p class="description">対応エリア、得意な工事、料金の考え方など、AIに伝えておきたいことを書きます。</p></td></tr>
 				<tr><th>言い換え(検索用)</th><td><textarea class="large-text" rows="7" name="<?php echo esc_attr( $f( 'synonyms' ) ); ?>"><?php echo esc_textarea( $o['synonyms'] ); ?></textarea>
 					<p class="description">同じ意味の言葉を、1行にカンマ区切りで書きます。どれか1つで検索すると、ほかの言葉の記事も見つかります(例: バルコニー,ベランダ)。</p></td></tr>
+				<tr><th>ボタンの位置(パソコン)</th><td>
+					<select name="<?php echo esc_attr( $f( 'pc_side' ) ); ?>"><option value="right" <?php selected( $o['pc_side'], 'right' ); ?>>右下</option><option value="left" <?php selected( $o['pc_side'], 'left' ); ?>>左下</option></select>
+					下から <input type="number" min="0" max="600" style="width:6em" name="<?php echo esc_attr( $f( 'pc_bottom' ) ); ?>" value="<?php echo esc_attr( $o['pc_bottom'] ); ?>"> px</td></tr>
+				<tr><th>ボタンの位置(スマホ)</th><td>
+					<select name="<?php echo esc_attr( $f( 'sp_side' ) ); ?>"><option value="left" <?php selected( $o['sp_side'], 'left' ); ?>>左下</option><option value="right" <?php selected( $o['sp_side'], 'right' ); ?>>右下</option></select>
+					下から <input type="number" min="0" max="600" style="width:6em" name="<?php echo esc_attr( $f( 'sp_bottom' ) ); ?>" value="<?php echo esc_attr( $o['sp_bottom'] ); ?>"> px
+					<p class="description">サイトの固定ボタン(電話・LINEなど)やブラウザの下のバーと重なって見えない場合は、反対側にするか、数字を大きくして上に動かしてください。</p></td></tr>
 				<tr><th>1時間あたりの上限(1人)</th><td><input type="number" min="1" name="<?php echo esc_attr( $f( 'rate_limit' ) ); ?>" value="<?php echo esc_attr( $o['rate_limit'] ); ?>"> 回<p class="description">API利用料の暴走を防ぎます。</p></td></tr>
 			</table>
 			<?php submit_button(); ?>

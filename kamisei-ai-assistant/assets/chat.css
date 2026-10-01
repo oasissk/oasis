@@ -1,4 +1,4 @@
-#kaia-root{--navy:#12305f;--navy-2:#1d4a8a;--navy-3:#e8eef8;--accent:#f5a623;--ink:#1c2433;position:fixed;right:16px;bottom:16px;z-index:99999;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.65;color:var(--ink)}
+#kaia-root{--navy:#12305f;--navy-2:#1d4a8a;--navy-3:#e8eef8;--accent:#f5a623;--ink:#1c2433;--pc-side-r:16px;--pc-side-l:auto;--pc-bottom:16px;--sp-side-r:auto;--sp-side-l:12px;--sp-bottom:110px;position:fixed;right:var(--pc-side-r);left:var(--pc-side-l);bottom:var(--pc-bottom);z-index:2147483000;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.65;color:var(--ink)}
 #kaia-root *{box-sizing:border-box}
 #kaia-root svg{display:block}
 
@@ -70,9 +70,15 @@
 .kaia-inq button:hover{filter:brightness(1.06)}
 .kaia-inq button:disabled{opacity:.6}
 
-@media (max-width:480px){
-  #kaia-root{right:12px;bottom:12px}
+@media (max-width:768px){
+  /* スマホ: サイトの固定ボタンやブラウザのバーと重ならない位置に置く */
+  #kaia-root{right:var(--sp-side-r);left:var(--sp-side-l);bottom:calc(var(--sp-bottom) + env(safe-area-inset-bottom,0px))}
+  .kaia-fab{padding:5px 16px 5px 5px}
+  .kaia-fab .kaia-ava{width:42px;height:42px}
   .kaia-fab b{font-size:14px}
+  /* 開いたときは画面の上側いっぱいに表示し、下のバーに入力欄が隠れないようにする */
+  #kaia-root.open{left:8px;right:8px;top:calc(8px + env(safe-area-inset-top,0px));bottom:calc(var(--sp-bottom) - 40px + env(safe-area-inset-bottom,0px))}
+  #kaia-root.open .kaia-panel{width:100%;height:100%}
 }
 
 /* 自由記入の枠 */

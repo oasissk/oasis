@@ -8,6 +8,14 @@ add_action( 'wp_enqueue_scripts', function () {
 		return;
 	}
 	wp_enqueue_style( 'kaia', KAIA_URL . 'assets/chat.css', array(), KAIA_VERSION );
+	$pc_r = 'left' === kaia_get( 'pc_side' ) ? 'auto' : '16px';
+	$pc_l = 'left' === kaia_get( 'pc_side' ) ? '16px' : 'auto';
+	$sp_r = 'right' === kaia_get( 'sp_side' ) ? '12px' : 'auto';
+	$sp_l = 'right' === kaia_get( 'sp_side' ) ? 'auto' : '12px';
+	wp_add_inline_style( 'kaia', sprintf(
+		'#kaia-root{--pc-side-r:%s;--pc-side-l:%s;--pc-bottom:%dpx;--sp-side-r:%s;--sp-side-l:%s;--sp-bottom:%dpx}',
+		$pc_r, $pc_l, (int) kaia_get( 'pc_bottom' ), $sp_r, $sp_l, (int) kaia_get( 'sp_bottom' )
+	) );
 	wp_enqueue_script( 'kaia', KAIA_URL . 'assets/chat.js', array(), KAIA_VERSION, true );
 	wp_localize_script( 'kaia', 'KAIA', array(
 		'mode'        => kaia_api_key() ? 'ai' : 'search',
