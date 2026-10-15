@@ -152,6 +152,7 @@ function kaia_chat( array $messages ) {
 						mb_substr( sanitize_text_field( $in['address'] ?? '' ), 0, 200 )
 					);
 					$handoff = true;
+					kaia_log_event( 'inquiry', '', 'ai' );
 					$out     = '担当者に引き継ぎました。';
 				}
 			} else {

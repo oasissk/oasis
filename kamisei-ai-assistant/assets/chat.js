@@ -134,6 +134,7 @@
     var wrap = el('div', 'kaia-cards');
     cases.forEach(function (c) {
       var a = el('a', 'kaia-card');
+      a.addEventListener('click', function () { track('card', (c.kind === 'article' ? '【参考記事】' : '【施工事例】') + c.title); });
       a.href = c.url; a.target = '_blank'; a.rel = 'noopener';
       if (c.image) { var im = el('img'); im.src = c.image; im.alt = ''; a.appendChild(im); }
       var s = el('span');
@@ -148,12 +149,23 @@
     var wrap = el('div', 'kaia-actions');
     if (withInquiry) {
       var b = el('button', '', '担当者に相談する'); b.type = 'button';
-      b.addEventListener('click', function () { b.remove(); addInquiryForm(prefill); });
+      b.addEventListener('click', function () { track('form'); b.remove(); addInquiryForm(prefill); });
       wrap.appendChild(b);
     }
     if (KAIA.reservation) { var r = el('a', '', '現地調査を予約する'); r.href = KAIA.reservation; wrap.appendChild(r); }
     if (KAIA.phone) { var t = el('a', '', '電話する'); t.href = 'tel:' + KAIA.phone.replace(/[^0-9+]/g, ''); wrap.appendChild(t); }
     if (wrap.children.length) { log.appendChild(wrap); scroll(); }
+  }
+
+  // 利用状況の記録(個人情報は送らない)。失敗しても画面の動きには影響させない
+  function track(type, label, step) {
+    try {
+      fetch(KAIA.endpoint + 'event', {
+        method: 'POST', keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: type, label: label || '', step: step || '' })
+      }).catch(function () {});
+    } catch (e) {}
   }
 
   function post(path, body) {
@@ -206,7 +218,7 @@
     addMsg(kw, 'me');
     send.disabled = true;
     var wait = addMsg('…', 'ai');
-    post('search', { keywords: kw }).then(function (res) {
+    post('search', { keywords: kw, src: 'manual' }).then(function (res) {
       wait.remove();
       if (!res.ok) { addMsg(res.j.message || 'エラーが発生しました。', 'ai'); addActions(false); return; }
       if (res.j.cases.length) { addMsg('「' + kw + '」に近いものです。', 'ai'); addCards(res.j.cases); }
@@ -257,6 +269,7 @@
     addMsg(step.q, 'ai');
     askChips(step.opts.map(function (o) { return o.label; }), function (i) {
       var o = step.opts[i];
+      track('choice', o.label, step.key);
       addMsg(o.label, 'me');
       answers.push(step.key + ': ' + o.label);
       (o.kw || []).forEach(function (k) { if (kws.indexOf(k) < 0) kws.push(k); });
@@ -266,6 +279,7 @@
   }
 
   function finishFlow(free) {
+    track('done');
     awaitFree = false;
     form.style.display = '';
     if (free) { addMsg(free, 'me'); answers.push('ほかに気になること: ' + free); }
@@ -275,7 +289,7 @@
       addMsg('今まさに雨漏りしている場合は、屋根には登らず、お急ぎでしたらお電話ください。室内は、バケツやタオルで被害を広げないようにしてください。', 'ai');
     }
     var wait = addMsg('近い事例を探しています…', 'ai');
-    post('search', { keywords: kws.slice(0, 5).join(' ') || (free ? '' : '屋根'), text: free || '' }).then(function (res) {
+    post('search', { keywords: kws.slice(0, 5).join(' ') || (free ? '' : '屋根'), text: free || '', src: 'flow' }).then(function (res) {
       wait.remove();
       if (res.ok && res.j.cases.length) { addMsg('近い事例・記事です。', 'ai'); addCards(res.j.cases); }
       else { addMsg('ぴったりの事例は見つかりませんでした。担当者がお話をうかがいます。', 'ai'); }
@@ -314,7 +328,11 @@
     if (!AI) startFlow();
   }
 
-  root.querySelector('.kaia-fab').addEventListener('click', function () { root.classList.add('open'); focusInput(); scroll(); });
+  var opened = false;
+  root.querySelector('.kaia-fab').addEventListener('click', function () {
+    if (!opened) { opened = true; track('open'); } // 1ページにつき1回だけ数える
+    root.classList.add('open'); focusInput(); scroll();
+  });
   root.querySelector('.kaia-close').addEventListener('click', function () { root.classList.remove('open'); });
 
   form.addEventListener('submit', function (e) {

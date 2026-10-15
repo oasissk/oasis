@@ -57,6 +57,7 @@ function kaia_rest_chat( WP_REST_Request $req ) {
 		return new WP_Error( 'kaia_bad', '入力が正しくありません。', array( 'status' => 400 ) );
 	}
 
+	kaia_log_event( 'chat' );
 	$res = kaia_chat( $messages );
 	if ( is_wp_error( $res ) ) {
 		return new WP_Error( $res->get_error_code(), '申し訳ありません、うまく応答できませんでした。お電話でもご相談いただけます。', array( 'status' => 502 ) );
@@ -75,6 +76,9 @@ function kaia_rest_search( WP_REST_Request $req ) {
 	$terms = kaia_terms_for( $kw, $text );
 	if ( ! $terms ) {
 		return new WP_Error( 'kaia_bad', 'キーワードを入力してください。', array( 'status' => 400 ) );
+	}
+	if ( 'manual' === $req->get_param( 'src' ) && '' !== $kw ) {
+		kaia_log_event( 'search', mb_substr( $kw, 0, 50 ) );
 	}
 	return array(
 		'cases' => kaia_rank_results( array_merge( kaia_search_cases( $terms, 5 ), kaia_search_articles( $terms, 5 ) ) ),
@@ -103,5 +107,6 @@ function kaia_rest_inquiry( WP_REST_Request $req ) {
 		$page = ''; // 自サイト以外のURLは記録しない
 	}
 	kaia_save_lead( $name, $contact, $message, '', $page, $address );
+	kaia_log_event( 'inquiry', '', 'form' );
 	return array( 'ok' => true );
 }
