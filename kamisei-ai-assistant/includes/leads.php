@@ -18,7 +18,11 @@ add_action( 'init', function () {
 /**
  * 問い合わせを保存し、担当者にメールする。
  */
-function kaia_save_lead( $name, $contact, $summary, $transcript = '', $page = '', $address = '' ) {
+/**
+ * @param array $meta 計測用の区分(_kaia_v, _kaia_route, _kaia_test)。個人情報は入れない。
+ * @return int 保存した投稿ID(失敗時は 0)。通知メールは保存の成否にかかわらず従来どおり送る。
+ */
+function kaia_save_lead( $name, $contact, $summary, $transcript = '', $page = '', $address = '', $meta = array() ) {
 	$body = "お名前: {$name}\n連絡先: {$contact}\nご住所: " . ( '' !== $address ? $address : '(未記入)' ) . "\n受付日時: " . wp_date( 'Y年n月j日 H:i' ) . "\n";
 	if ( $page ) {
 		$body .= "相談したページ: {$page}\n";
@@ -34,6 +38,12 @@ function kaia_save_lead( $name, $contact, $summary, $transcript = '', $page = ''
 		'post_title'   => $name . ' 様',
 		'post_content' => $body,
 	) );
+	$id = is_wp_error( $id ) ? 0 : (int) $id;
+	if ( $id ) {
+		foreach ( $meta as $k => $v ) {
+			update_post_meta( $id, $k, $v );
+		}
+	}
 
 	$to = kaia_parse_emails( kaia_get( 'notify_email' ) );
 	if ( $to ) {

@@ -47,6 +47,16 @@
   window.__kaiaLoaded = true;
 
   var AI = KAIA.mode === 'ai';
+
+  // ---- 計測用(個人を特定しない)
+  // セッション番号: タブごとのランダムな番号。クッキーは使わない。
+  // テスト: 管理画面にログインできる人、または URL に ?kaia_test=1 を付けて開いたタブ。
+  function ss(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) {} return null; }
+  function rid(n) { var s = ''; while (s.length < n) s += Math.random().toString(36).slice(2); return s.slice(0, n); }
+  var SID = ss('kaia_sid'); if (!SID || !/^[a-z0-9]{8,16}$/.test(SID)) { SID = rid(12); ss('kaia_sid', SID); }
+  if (/[?&]kaia_test=1/.test(location.search)) ss('kaia_test', '1');
+  var TEST = (KAIA.tester == 1 || ss('kaia_test') === '1') ? 1 : 0;
+  function meta(o) { o.sid = SID; o.test = TEST; return o; }
   var STORE = 'kaia_history';
   var history = [];
   if (AI) { try { history = JSON.parse(sessionStorage.getItem(STORE) || '[]'); } catch (e) {} }
@@ -129,12 +139,12 @@
     return row;
   }
 
-  function addCards(cases) {
+  function addCards(cases, route) {
     if (!cases || !cases.length) return;
     var wrap = el('div', 'kaia-cards');
-    cases.forEach(function (c) {
+    cases.forEach(function (c, i) {
       var a = el('a', 'kaia-card');
-      a.addEventListener('click', function () { track('card', (c.kind === 'article' ? '【参考記事】' : '【施工事例】') + c.title); });
+      a.addEventListener('click', function () { if (route) track('article', route, i + 1, c.id); });
       a.href = c.url; a.target = '_blank'; a.rel = 'noopener';
       if (c.image) { var im = el('img'); im.src = c.image; im.alt = ''; a.appendChild(im); }
       var s = el('span');
@@ -145,11 +155,11 @@
     log.appendChild(wrap); scroll();
   }
 
-  function addActions(withInquiry, prefill) {
+  function addActions(withInquiry, prefill, route) {
     var wrap = el('div', 'kaia-actions');
     if (withInquiry) {
       var b = el('button', '', '担当者に相談する'); b.type = 'button';
-      b.addEventListener('click', function () { track('form'); b.remove(); addInquiryForm(prefill); });
+      b.addEventListener('click', function () { track('consult', route); b.remove(); addInquiryForm(prefill, route); });
       wrap.appendChild(b);
     }
     if (KAIA.reservation) { var r = el('a', '', '現地調査を予約する'); r.href = KAIA.reservation; wrap.appendChild(r); }
@@ -157,13 +167,14 @@
     if (wrap.children.length) { log.appendChild(wrap); scroll(); }
   }
 
-  // 利用状況の記録(個人情報は送らない)。失敗しても画面の動きには影響させない
-  function track(type, label, step) {
+  // 利用状況の記録(決められたコードだけを送る。個人情報や入力された文章は送らない)。
+  // 失敗しても画面の動きには影響させない。
+  function track(type, route, step, code) {
     try {
       fetch(KAIA.endpoint + 'event', {
         method: 'POST', keepalive: true,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: type, label: label || '', step: step || '' })
+        body: JSON.stringify(meta({ v: 2, type: type, route: route || '', step: step || '', code: code == null ? '' : String(code) }))
       }).catch(function () {});
     } catch (e) {}
   }
@@ -177,7 +188,8 @@
   }
 
   // ---- 問い合わせフォーム(検索のみモード)
-  function addInquiryForm(prefill) {
+  function addInquiryForm(prefill, route) {
+    var token = rid(16); // このフォームの送信番号(二重登録の防止)
     var f = el('form', 'kaia-inq');
     f.innerHTML =
       '<h4>担当者に相談する</h4>' +
@@ -202,7 +214,8 @@
       btn.disabled = true;
       post('inquiry', {
         name: d.get('name'), contact: d.get('contact'), address: d.get('address'), message: d.get('message'),
-        website: d.get('website'), consent: !!d.get('consent'), page: location.href
+        website: d.get('website'), consent: !!d.get('consent'), page: location.href,
+        route: route || '', sid: SID, test: TEST, token: token
       }).then(function (res) {
         if (!res.ok) { btn.disabled = false; addMsg(res.j.message || 'エラーが発生しました。', 'ai'); return; }
         f.remove(); addMsg('送信しました。担当者より折り返しご連絡します。', 'ai');
@@ -218,19 +231,19 @@
     addMsg(kw, 'me');
     send.disabled = true;
     var wait = addMsg('…', 'ai');
-    post('search', { keywords: kw, src: 'manual' }).then(function (res) {
+    post('search', meta({ keywords: kw, src: 'manual' })).then(function (res) {
       wait.remove();
       if (!res.ok) { addMsg(res.j.message || 'エラーが発生しました。', 'ai'); addActions(false); return; }
-      if (res.j.cases.length) { addMsg('「' + kw + '」に近いものです。', 'ai'); addCards(res.j.cases); }
+      if (res.j.cases.length) { addMsg('「' + kw + '」に近いものです。', 'ai'); addCards(res.j.cases, 'search'); }
       else { addMsg('「' + kw + '」に近い事例は見つかりませんでした。別の言葉でお試しいただくか、ご相談ください。', 'ai'); }
-      addActions(true);
+      addActions(true, '', 'search');
     }).catch(function () { wait.remove(); addMsg('通信エラーが発生しました。', 'ai'); })
       .finally(function () { send.disabled = false; focusInput(); });
   }
 
 
   // ---- ヒアリング(検索のみモード)
-  var answers = [], kws = [], urgent = false, awaitFree = false, chipsEl = null;
+  var answers = [], kws = [], urgent = false, awaitFree = false, chipsEl = null, symptom = '';
 
   function askChips(labels, onPick) {
     chipsEl = el('div', 'kaia-actions');
@@ -243,7 +256,7 @@
   }
 
   function startFlow() {
-    answers = []; kws = []; urgent = false; awaitFree = false; form.style.display = '';
+    answers = []; kws = []; urgent = false; awaitFree = false; symptom = ''; form.style.display = '';
     askStep('start');
   }
 
@@ -269,7 +282,8 @@
     addMsg(step.q, 'ai');
     askChips(step.opts.map(function (o) { return o.label; }), function (i) {
       var o = step.opts[i];
-      track('choice', o.label, step.key);
+      if (id === 'start') symptom = o.code;
+      track('answer', 'diag', step.code, o.code);
       addMsg(o.label, 'me');
       answers.push(step.key + ': ' + o.label);
       (o.kw || []).forEach(function (k) { if (kws.indexOf(k) < 0) kws.push(k); });
@@ -279,7 +293,7 @@
   }
 
   function finishFlow(free) {
-    track('done');
+    if (symptom) track('complete', 'diag', '', symptom);
     awaitFree = false;
     form.style.display = '';
     if (free) { addMsg(free, 'me'); answers.push('ほかに気になること: ' + free); }
@@ -291,11 +305,11 @@
     var wait = addMsg('近い事例を探しています…', 'ai');
     post('search', { keywords: kws.slice(0, 5).join(' ') || (free ? '' : '屋根'), text: free || '', src: 'flow' }).then(function (res) {
       wait.remove();
-      if (res.ok && res.j.cases.length) { addMsg('近い事例・記事です。', 'ai'); addCards(res.j.cases); }
+      if (res.ok && res.j.cases.length) { addMsg('近い事例・記事です。', 'ai'); addCards(res.j.cases, 'diag'); }
       else { addMsg('ぴったりの事例は見つかりませんでした。担当者がお話をうかがいます。', 'ai'); }
     }).catch(function () { wait.remove(); })
       .finally(function () {
-        addActions(true, summary);
+        addActions(true, summary, 'diag');
         var again = el('div', 'kaia-actions');
         var b = el('button', '', '最初からやり直す'); b.type = 'button';
         b.addEventListener('click', function () { again.remove(); startFlow(); });
@@ -330,7 +344,7 @@
 
   var opened = false;
   root.querySelector('.kaia-fab').addEventListener('click', function () {
-    if (!opened) { opened = true; track('open'); } // 1ページにつき1回だけ数える
+    if (!opened) { opened = true; track('open'); } // 1ページにつき最初の1回だけ記録(タブ単位の集計はセッション番号で行う)
     root.classList.add('open'); focusInput(); scroll();
   });
   root.querySelector('.kaia-close').addEventListener('click', function () { root.classList.remove('open'); });

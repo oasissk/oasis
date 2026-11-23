@@ -57,7 +57,7 @@ function kaia_rest_chat( WP_REST_Request $req ) {
 		return new WP_Error( 'kaia_bad', '入力が正しくありません。', array( 'status' => 400 ) );
 	}
 
-	kaia_log_event( 'chat' );
+	kaia_log_event( 'chat', '', '', array( 'route' => 'ai' ) );
 	$res = kaia_chat( $messages );
 	if ( is_wp_error( $res ) ) {
 		return new WP_Error( $res->get_error_code(), '申し訳ありません、うまく応答できませんでした。お電話でもご相談いただけます。', array( 'status' => 502 ) );
@@ -77,12 +77,13 @@ function kaia_rest_search( WP_REST_Request $req ) {
 	if ( ! $terms ) {
 		return new WP_Error( 'kaia_bad', 'キーワードを入力してください。', array( 'status' => 400 ) );
 	}
+	$cases = kaia_rank_results( array_merge( kaia_search_cases( $terms, 5 ), kaia_search_articles( $terms, 5 ) ) );
+	// 検索欄からの検索だけを記録する(診断の結果表示のための検索は数えない)。
+	// 検索文そのものは記録せず、分類コードと「結果が0件か」だけを残す。
 	if ( 'manual' === $req->get_param( 'src' ) && '' !== $kw ) {
-		kaia_log_event( 'search', mb_substr( $kw, 0, 50 ) );
+		kaia_log_event( 'search', kaia_search_category( $kw ), $cases ? 'hit' : 'zero', kaia_req_meta( $req, 'search' ) );
 	}
-	return array(
-		'cases' => kaia_rank_results( array_merge( kaia_search_cases( $terms, 5 ), kaia_search_articles( $terms, 5 ) ) ),
-	);
+	return array( 'cases' => $cases );
 }
 
 /** 検索のみモード: 問い合わせフォームの受付。 */
@@ -106,7 +107,24 @@ function kaia_rest_inquiry( WP_REST_Request $req ) {
 	if ( $page && wp_parse_url( $page, PHP_URL_HOST ) !== wp_parse_url( home_url(), PHP_URL_HOST ) ) {
 		$page = ''; // 自サイト以外のURLは記録しない
 	}
-	kaia_save_lead( $name, $contact, $message, '', $page, $address );
-	kaia_log_event( 'inquiry', '', 'form' );
+	// 同じ送信の二重登録を防ぐ(送信ごとに画面で作る番号)
+	$token = preg_match( '/^[a-z0-9]{8,32}$/', (string) $req->get_param( 'token' ) ) ? (string) $req->get_param( 'token' ) : '';
+	$tkey  = $token ? 'kaia_tok_' . md5( $token ) : '';
+	if ( $tkey && get_transient( $tkey ) ) {
+		return array( 'ok' => true, 'duplicate' => true );
+	}
+	$meta = kaia_req_meta( $req );
+	$id   = kaia_save_lead( $name, $contact, $message, '', $page, $address, array(
+		'_kaia_v'     => 2,
+		'_kaia_route' => $meta['route'],
+		'_kaia_test'  => $meta['is_test'],
+	) );
+	if ( ! $id ) {
+		return new WP_Error( 'kaia_save', '送信を受け付けられませんでした。お手数ですがお電話でご連絡ください。', array( 'status' => 500 ) );
+	}
+	if ( $tkey ) {
+		set_transient( $tkey, 1, DAY_IN_SECONDS );
+	}
+	kaia_log_event( 'inquiry_ok', '', '', $meta ); // 保存できたときだけ数える
 	return array( 'ok' => true );
 }

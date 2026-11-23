@@ -143,16 +143,19 @@ function kaia_chat( array $messages ) {
 				if ( empty( $in['consent'] ) || empty( $in['name'] ) || empty( $in['contact'] ) ) {
 					$out = '同意・お名前・連絡先が揃っていないため送信しませんでした。';
 				} else {
-					kaia_save_lead(
+					$lead_id = kaia_save_lead(
 						sanitize_text_field( $in['name'] ),
 						sanitize_text_field( $in['contact'] ),
 						sanitize_textarea_field( $in['summary'] ?? '' ),
 						kaia_transcript( $messages ),
 						'',
-						mb_substr( sanitize_text_field( $in['address'] ?? '' ), 0, 200 )
+						mb_substr( sanitize_text_field( $in['address'] ?? '' ), 0, 200 ),
+						array( '_kaia_v' => 2, '_kaia_route' => 'ai', '_kaia_test' => 0 )
 					);
 					$handoff = true;
-					kaia_log_event( 'inquiry', '', 'ai' );
+					if ( $lead_id ) {
+						kaia_log_event( 'inquiry_ok', '', '', array( 'route' => 'ai' ) );
+					}
 					$out     = '担当者に引き継ぎました。';
 				}
 			} else {
