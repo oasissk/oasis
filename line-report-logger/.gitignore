@@ -1,0 +1,7 @@
+# 設定・鍵・記録はGitに入れない
+config/config.php
+config/*.json
+*.pem
+*.key
+data/
+tests/tmp/
